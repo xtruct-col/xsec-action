@@ -2,9 +2,10 @@
 
 Scan every pull request's **preview deployment** for the
 [OWASP Top 10 (2025)](https://owasp.org/Top10/) with
-[xsec](https://github.com/xtruct-col/xsec-action), comment on the PR with what
-the PR **adds** compared with production, and fail the check when a new
-finding is at or above a severity.
+[xsec](https://github.com/xtruct-col/xsec-action), **review the code** the
+pull request adds for security mistakes, explain each problem in plain words
+right on the line, and fail the check when something is at or above a
+severity.
 
 What a run does:
 
@@ -12,13 +13,17 @@ What a run does:
    repository's releases and checks its sha256 against the release's
    `checksums.txt`;
 2. if `base-url` is set, scans production the same way: that is the baseline;
-3. scans `url` (the preview). With a baseline, findings are split into
-   **New**, **Still open** and **Fixed**, and only new ones can fail the check;
-4. if `xsec-token` is set, uploads the report to the xsec dashboard;
-5. writes the report to the job summary and keeps one sticky comment on the
-   pull request (edited on each run, not duplicated);
-6. exits like the CLI: `0` passed, `2` new findings at or above `fail-on`,
-   `1` the scan could not run.
+3. if `url` is set, scans it (the preview). With a baseline, findings are
+   split into **New**, **Still open** and **Fixed**, and only new ones can
+   fail the check;
+4. on a pull request, reviews the code it adds ([below](#code-review));
+5. if `xsec-token` is set, uploads the scan's report to the xsec dashboard;
+6. writes both to the job summary, keeps one sticky comment on the pull
+   request (edited on each run, not duplicated) and posts the code review's
+   comments on the lines they are about;
+7. exits `0` passed, `2` if the scan (new findings at or above `fail-on`) or
+   the review (at or above `review-fail-on`) fails, `1` if either could not
+   run.
 
 ## Passive by default: scan only what you own
 
@@ -38,21 +43,97 @@ xsec does not verify ownership from CI.
 
 | Input | Default | What |
 |---|---|---|
-| `url` | (required) | The preview to scan. |
+| `url` | | The preview to scan. Empty: no scan, only the code review. |
+| `review` | `auto` | `auto`: review the code on `pull_request` events when the checkout has the base commit; `true`: always (needs a git checkout); `false`: never. |
+| `review-fail-on` | `high` | `never`, `low`, `medium`, `high` or `critical`, for the code review. Guesses and AI findings never fail the check. |
+| `review-base` | | What to compare with. Default: the pull request's base commit (on other events, the merge base with `origin/main`). |
 | `base-url` | | Production, scanned with the same options as the baseline. Without it every finding counts as new. |
 | `fail-on` | `high` | `never`, `low`, `medium`, `high` or `critical`. |
 | `passive` | `true` | See above. |
 | `headers` | | Extra request headers, one `Name: value` per line, sent only to the scanned site's own origin (never to a CDN or another site it links to). Values are masked in the log and never stored in the report. |
 | `seeds` | | Extra paths or URLs on the same host, one per line (pages only reachable by navigating a single-page app). |
-| `comment` | `true` | Keep a sticky PR comment. Needs `pull-requests: write`. |
-| `github-token` | `github.token` | Token for the comment. |
-| `xsec-token` | | A per-site CI token from the dashboard (`xsec_ci_…`): uploads the report. |
-| `xsec-api` | `https://xsec-api.91.107.213.88.sslip.io` | Where the report is uploaded. |
+| `comment` | `true` | Keep a sticky PR comment and post the code review's line comments. Needs `pull-requests: write`. |
+| `github-token` | `github.token` | Token for the comments. |
+| `xsec-token` | | A per-site CI token from the dashboard (`xsec_ci_…`): uploads the scan's report, and adds an AI review to the code review. |
+| `xsec-api` | `https://xsec-api.91.107.213.88.sslip.io` | Where the report is uploaded and the AI review runs. |
 | `version` | `latest` | The CLI version, e.g. `0.2.0`. Pin it for reproducible runs. |
 | `args` | | Advanced: more CLI flags, space-separated (e.g. `--max-pages 50`). |
 
 Outputs: `exit-code`, `new-findings`, `report-json`, `report-markdown`,
-`diff-json` (with a baseline) and `dashboard-url` (after an upload).
+`diff-json` (with a baseline), `dashboard-url` (after an upload), and for the
+code review `review-exit-code`, `review-findings`, `review-markdown` and
+`review-json`.
+
+## Code review
+
+On a pull request, xsec reads the lines it **adds** and comments on the ones
+that are insecure, each with what is wrong, how to fix it and why it
+matters, in words for people who build with AI and are not security experts.
+It looks for what gets shipped most: API keys and `.env` files committed,
+server secrets in `NEXT_PUBLIC_` / `VITE_` / `REACT_APP_` variables, the
+Supabase `service_role` key in browser code, row level security turned off
+or opened with `using (true)`, Firebase rules open to everyone, SQL built
+from strings, `eval` and shell commands built from variables, raw HTML from
+variables, certificate checks turned off, CORS that lets any site use your
+users' logins, JWTs read without checking their signature, passwords hashed
+with MD5 or SHA-1, `Math.random()` for tokens, routes and server actions that
+write without a visible login check, AI output run as code, SQL, shell or
+HTML, user input in a system prompt, open redirects, and passwords or tokens
+in logs. Lockfiles, vendored, generated, minified and binary files are
+skipped.
+
+The review needs the base commit, so check out with **`fetch-depth: 0`**,
+and posting comments needs **`pull-requests: write`**:
+
+```yaml
+# .github/workflows/xsec-review.yml
+name: xsec review
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write   # the review's line comments and the sticky comment
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # the base commit, to compare with
+      - uses: xtruct-col/xsec-action@v1
+        with:
+          review-fail-on: high
+          xsec-token: ${{ secrets.XSEC_CI_TOKEN }}   # optional: adds the AI review
+```
+
+Without `url` it only reviews code; add `url` (and `base-url`) to scan the
+preview in the same run. With Vercel's `deployment_status` events (no
+pull request in the event), keep the scan in its own workflow as shown
+below and the review in this one.
+
+Each run posts **one** review (as a comment: it never approves or blocks a
+merge by itself; the check's status does that). Each line comment carries a
+hidden marker, so a re-run does not post the same comment twice, even if the
+line moved. Findings marked *inferred* are educated guesses and never fail
+the check.
+
+### What is sent to xsec, and when
+
+Without `xsec-token`, nothing: the rules run inside your runner.
+
+With `xsec-token`, the code review also asks xsec's AI review, and sends:
+the **changed lines of the pull request with a few lines of context around
+them** (not whole files, not removed lines), each file's path and language,
+and the rules' findings. **Secrets are redacted before sending**: every key,
+token, password or database URL the rules can recognise, and every value in
+a `.env` file, is replaced by `[redacted]`. xsec does **not store** the code;
+it passes it to **OpenAI** for the review and returns the findings. At most
+50 files and 200 KB per run (the review says when it had to leave files
+out; the rules still check all of them). Each review counts against your
+plan's monthly AI review quota; when it is used up, or the AI review is
+unavailable, the run warns and the rules' findings stand. AI findings are
+kept only on lines the pull request adds, and never fail the check.
 
 How findings match across hosts: by check, parameter and URL, where a URL on
 the scanned site counts by its path and query, so `/search` on the preview
@@ -167,8 +248,8 @@ With `xsec-token` (a CI token a company admin creates for one site in the
 xsec dashboard), the action posts the JSON report with the repository, PR
 number, commit and a link to the PR or run. The token is masked in the log
 and sent in a header file, never on a command line. An upload that fails
-(a rejected token, a report too large, the monthly cap) is a warning; the
-check's verdict is always the scan's.
+(a rejected token, a report too large, the monthly cap) is a warning; it
+never changes the check's verdict.
 
 ## License
 

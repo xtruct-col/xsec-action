@@ -1,5 +1,5 @@
-name: "xsec: OWASP Top 10 scan of a preview"
-description: "Scan each pull request's preview deployment for the OWASP Top 10, comment what is new compared with production, and fail on new findings."
+name: "xsec: OWASP Top 10 scan and code review"
+description: "Scan each pull request's preview deployment for the OWASP Top 10, review the code it adds for security mistakes, comment in plain words, and fail on new findings."
 author: "xtruct"
 branding:
   icon: shield
@@ -7,8 +7,21 @@ branding:
 
 inputs:
   url:
-    description: "The preview deployment to scan (e.g. github.event.deployment_status.target_url)."
-    required: true
+    description: "The preview deployment to scan (e.g. github.event.deployment_status.target_url). Empty: no scan, only the code review."
+    required: false
+    default: ""
+  review:
+    description: "auto | true | false: review the code the pull request adds. auto runs on pull_request events when the checkout has the base commit (actions/checkout with fetch-depth: 0)."
+    required: false
+    default: "auto"
+  review-fail-on:
+    description: "never | low | medium | high | critical: fail the check on a code review finding at or above this severity (guesses and AI findings never fail it)."
+    required: false
+    default: "high"
+  review-base:
+    description: "The commit or branch to compare with (default: the pull request's base commit; outside a pull_request event, the merge base with origin/main)."
+    required: false
+    default: ""
   base-url:
     description: "Production (or main's deployment), scanned with the same options as the baseline: only findings the preview adds are new. Empty: every finding counts."
     required: false
@@ -30,7 +43,7 @@ inputs:
     required: false
     default: ""
   comment:
-    description: "true: keep one sticky comment on the pull request with the results (needs pull-requests: write)."
+    description: "true: keep one sticky comment on the pull request with the results, and post the code review's inline comments (needs pull-requests: write)."
     required: false
     default: "true"
   github-token:
@@ -38,7 +51,7 @@ inputs:
     required: false
     default: ${{ github.token }}
   xsec-token:
-    description: "A CI token for this site from the xsec dashboard (xsec_ci_...). Given: the report is uploaded to the dashboard."
+    description: "A CI token for this site from the xsec dashboard (xsec_ci_...). Given: the report is uploaded to the dashboard, and the code review adds an AI review (the PR's changed lines, secrets redacted, go to xsec and OpenAI)."
     required: false
     default: ""
   xsec-api:
@@ -56,8 +69,20 @@ inputs:
 
 outputs:
   exit-code:
-    description: "The CLI's exit code: 0 ok, 2 new findings at or above fail-on, 1 could not run."
+    description: "The action's exit code: 0 ok, 2 new scan findings at or above fail-on or code review findings at or above review-fail-on, 1 could not run."
     value: ${{ steps.scan.outputs.exit-code }}
+  review-exit-code:
+    description: "The code review's own exit code (0, 2 or 1), when it ran."
+    value: ${{ steps.scan.outputs.review-exit-code }}
+  review-findings:
+    description: "How many problems the code review found, when it ran."
+    value: ${{ steps.scan.outputs.review-findings }}
+  review-markdown:
+    description: "Path to the code review in Markdown."
+    value: ${{ steps.scan.outputs.review-markdown }}
+  review-json:
+    description: "Path to the code review in JSON."
+    value: ${{ steps.scan.outputs.review-json }}
   new-findings:
     description: "How many findings are new compared with base-url (all findings without one)."
     value: ${{ steps.scan.outputs.new-findings }}
@@ -83,6 +108,9 @@ runs:
         INPUT_URL: ${{ inputs.url }}
         INPUT_BASE_URL: ${{ inputs.base-url }}
         INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_REVIEW: ${{ inputs.review }}
+        INPUT_REVIEW_FAIL_ON: ${{ inputs.review-fail-on }}
+        INPUT_REVIEW_BASE: ${{ inputs.review-base }}
         INPUT_PASSIVE: ${{ inputs.passive }}
         INPUT_HEADERS: ${{ inputs.headers }}
         INPUT_SEEDS: ${{ inputs.seeds }}
