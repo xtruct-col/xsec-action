@@ -1,0 +1,95 @@
+name: "xsec: OWASP Top 10 scan of a preview"
+description: "Scan each pull request's preview deployment for the OWASP Top 10, comment what is new compared with production, and fail on new findings."
+author: "xtruct"
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  url:
+    description: "The preview deployment to scan (e.g. github.event.deployment_status.target_url)."
+    required: true
+  base-url:
+    description: "Production (or main's deployment), scanned with the same options as the baseline: only findings the preview adds are new. Empty: every finding counts."
+    required: false
+    default: ""
+  fail-on:
+    description: "never | low | medium | high | critical: fail the check on new findings at or above this severity."
+    required: false
+    default: "high"
+  passive:
+    description: "true: only what a visitor's browser sees (no payloads, no guessed paths). Set false for a full scan only on environments you own."
+    required: false
+    default: "true"
+  headers:
+    description: "Extra request headers, one 'Name: value' per line, sent only to the scanned origins (e.g. x-vercel-protection-bypass). Pass values from secrets; they are masked and never stored in the report."
+    required: false
+    default: ""
+  seeds:
+    description: "Extra entry points (paths or URLs on the same host), one per line, for pages a crawl cannot reach by links."
+    required: false
+    default: ""
+  comment:
+    description: "true: keep one sticky comment on the pull request with the results (needs pull-requests: write)."
+    required: false
+    default: "true"
+  github-token:
+    description: "Token for the PR comment."
+    required: false
+    default: ${{ github.token }}
+  xsec-token:
+    description: "A CI token for this site from the xsec dashboard (xsec_ci_...). Given: the report is uploaded to the dashboard."
+    required: false
+    default: ""
+  xsec-api:
+    description: "The xsec API the report is uploaded to."
+    required: false
+    default: "https://xsec-api.91.107.213.88.sslip.io"
+  version:
+    description: "xsec CLI version to download (e.g. 0.2.0), or latest."
+    required: false
+    default: "latest"
+  args:
+    description: "Advanced: extra xsec CLI flags, separated by spaces (e.g. --max-pages 50)."
+    required: false
+    default: ""
+
+outputs:
+  exit-code:
+    description: "The CLI's exit code: 0 ok, 2 new findings at or above fail-on, 1 could not run."
+    value: ${{ steps.scan.outputs.exit-code }}
+  new-findings:
+    description: "How many findings are new compared with base-url (all findings without one)."
+    value: ${{ steps.scan.outputs.new-findings }}
+  report-json:
+    description: "Path to the JSON report."
+    value: ${{ steps.scan.outputs.report-json }}
+  report-markdown:
+    description: "Path to the Markdown report."
+    value: ${{ steps.scan.outputs.report-markdown }}
+  diff-json:
+    description: "Path to the comparison with base-url (new, still open, fixed), when there is one."
+    value: ${{ steps.scan.outputs.diff-json }}
+  dashboard-url:
+    description: "The scan in the xsec dashboard, when uploaded."
+    value: ${{ steps.scan.outputs.dashboard-url }}
+
+runs:
+  using: composite
+  steps:
+    - id: scan
+      shell: bash
+      env:
+        INPUT_URL: ${{ inputs.url }}
+        INPUT_BASE_URL: ${{ inputs.base-url }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_PASSIVE: ${{ inputs.passive }}
+        INPUT_HEADERS: ${{ inputs.headers }}
+        INPUT_SEEDS: ${{ inputs.seeds }}
+        INPUT_COMMENT: ${{ inputs.comment }}
+        INPUT_XSEC_TOKEN: ${{ inputs.xsec-token }}
+        INPUT_XSEC_API: ${{ inputs.xsec-api }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_ARGS: ${{ inputs.args }}
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: '"$GITHUB_ACTION_PATH/run.sh"'
