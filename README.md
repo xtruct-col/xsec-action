@@ -46,6 +46,8 @@ xsec does not verify ownership from CI.
 | `url` | | The preview to scan. Empty: no scan, only the code review. |
 | `review` | `auto` | `auto`: review the code on `pull_request` events when the checkout has the base commit; `true`: always (needs a git checkout); `false`: never. |
 | `review-fail-on` | `high` | `never`, `low`, `medium`, `high` or `critical`, for the code review. Guesses and AI findings never fail the check. |
+| `deps` | `auto` | `auto`, `true` or `false`: check the checkout's lockfiles against recent advisories (`auto`: on `pull_request` events when there is a lockfile). |
+| `deps-fail-on` | `critical` | Fail on a dependency named by an advisory at or above this severity (`never` to only report). |
 | `review-base` | | What to compare with. Default: the pull request's base commit (on other events, the merge base with `origin/main`). |
 | `base-url` | | Production, scanned with the same options as the baseline. Without it every finding counts as new. |
 | `fail-on` | `high` | `never`, `low`, `medium`, `high` or `critical`. |
@@ -62,7 +64,22 @@ xsec does not verify ownership from CI.
 Outputs: `exit-code`, `new-findings`, `report-json`, `report-markdown`,
 `diff-json` (with a baseline), `dashboard-url` (after an upload), and for the
 code review `review-exit-code`, `review-findings`, `review-markdown` and
-`review-json`.
+`review-json`, and for the dependency check `deps-exit-code`,
+`deps-findings`, `deps-markdown` and `deps-json`.
+
+## Dependencies with known problems
+
+On a pull request whose checkout has a lockfile, the action also runs
+`xsec deps`: it compares the lockfiles (npm, pnpm, yarn, bun, pip
+requirements, poetry, uv, Pipfile, bundler, composer, go.sum, `.nvmrc`)
+with xsec's short list of recent, serious advisories and hijacked releases,
+built into the CLI, and adds the result to the comment: what is installed,
+why it matters and the version to move to. Nothing leaves the runner. It
+fails the check only on **critical** problems by default (`deps-fail-on`),
+because they are usually older than the pull request. `deps: false` turns
+it off; `deps: true` runs it on any event. The list is public at
+<https://security.xtruct.net/advisories>, and `advisories.json` in this
+repository is its current version (`xsec deps --update` reads it).
 
 ## Code review
 

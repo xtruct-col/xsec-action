@@ -1,0 +1,421 @@
+{
+  "schema": 1,
+  "updated": "2026-11-06",
+  "advisories": [
+    {
+      "id": "CVE-2026-111497",
+      "aliases": [],
+      "kind": "vulnerability",
+      "title_en": "Node.js: a memory bug in Brotli decompression can let an attacker take over the server",
+      "title_es": "Node.js: un error de memoria al descomprimir Brotli puede dar el control del servidor a un atacante",
+      "summary_en": "Node.js ships Google's Brotli decompressor in node:zlib. Malformed Brotli data makes it write past the end of a buffer, so an app that decompresses data an attacker sends (an upload, a proxied response, a compressed request body) can crash, leak memory or run the attacker's code. CISA lists the Brotli flaw as exploited in the wild.",
+      "summary_es": "Node.js incluye el descompresor Brotli de Google en node:zlib. Datos Brotli malformados lo hacen escribir más allá del final de un búfer, así que una app que descomprime datos que manda un atacante (una subida, una respuesta que reenvía, el cuerpo comprimido de una petición) puede caerse, filtrar memoria o ejecutar el código del atacante. CISA lista la falla de Brotli como explotada en ataques reales.",
+      "fix_en": "Upgrade Node.js itself (not an npm package) to 22.23.4, 24.22.1 or 26.12.1, on your machine, in CI (setup-node) and in your Dockerfile's FROM node:<version>. The advisory gives no workaround. Lines that reached end of life get no fix: move to a supported line.",
+      "fix_es": "Actualiza Node.js mismo (no es un paquete de npm) a 22.23.4, 24.22.1 o 26.12.1, en tu máquina, en CI (setup-node) y en el FROM node:<versión> de tu Dockerfile. El aviso no da otra salida. Las líneas sin soporte no reciben arreglo: pasa a una línea con soporte.",
+      "severity": "high",
+      "cvss": { "score": 9.8, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "by": "NVD" },
+      "published": "2026-10-21",
+      "exploited": true,
+      "kev": "2026-10-27",
+      "affected": [
+        { "ecosystem": "node", "package": "node", "ranges": [">= 22.0.0, < 22.23.4", ">= 24.0.0, < 24.22.1", ">= 26.0.0, < 26.12.1"], "fixed": ["22.23.4", "24.22.1", "26.12.1"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://nodejs.org/en/blog/vulnerability/october-2026-security-releases",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-111497",
+        "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-111497"
+      ]
+    },
+    {
+      "id": "GHSA-2464-fhr4-w9xw",
+      "aliases": ["CVE-2026-96889", "GHSA-673q-mjm6-r5xr"],
+      "kind": "vulnerability",
+      "title_en": "Next.js: two ways to run code on the server without logging in (October 2026)",
+      "title_es": "Next.js: dos formas de ejecutar código en el servidor sin iniciar sesión (octubre de 2026)",
+      "summary_en": "Next.js resizes images for you at /_next/image. A memory bug in the SVG library behind it lets an attacker who gets a crafted SVG processed run code on a server on glibc-based Linux. A second, separate bug lets anyone run code on apps that use the App Router with Cache Components when a 'use cache' function returns typed arrays; Vercel asks every 16.x app to upgrade, whether or not it has such a function.",
+      "summary_es": "Next.js redimensiona imágenes por ti en /_next/image. Un error de memoria en la librería de SVG que usa por debajo deja que un atacante que consiga procesar un SVG preparado ejecute código en un servidor Linux con glibc. Un segundo error, distinto, deja que cualquiera ejecute código en apps con App Router y Cache Components cuando una función 'use cache' devuelve arreglos tipados; Vercel pide actualizar toda app 16.x, tenga o no una función así.",
+      "fix_en": "Upgrade next to 15.5.28 (15.x) or 16.4.1 (16.x); there is no 16.3.x backport. Upgrading next also gives it a fixed sharp; if you cannot upgrade yet, make sure the sharp that Next.js uses is 0.35.5 or later (that only covers the image bug).",
+      "fix_es": "Actualiza next a 15.5.28 (15.x) o 16.4.1 (16.x); no hay parche para 16.3.x. Al actualizar next también recibe un sharp corregido; si aún no puedes actualizar, asegúrate de que el sharp que usa Next.js sea 0.35.5 o posterior (eso solo cubre el error de imágenes).",
+      "severity": "critical",
+      "cvss": { "score": 9.5, "version": "4.0", "vector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H", "by": "GitHub" },
+      "published": "2026-10-14",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "npm", "package": "next", "ranges": [">= 10.0.0, <= 15.5.27", ">= 16.0.0, <= 16.4.0"], "fixed": ["15.5.28", "16.4.1"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://nextjs.org/blog/nextjs-security-update-october-14-2026",
+        "https://github.com/advisories/GHSA-2464-fhr4-w9xw",
+        "https://github.com/advisories/GHSA-673q-mjm6-r5xr",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-96889"
+      ]
+    },
+    {
+      "id": "CVE-2026-102268",
+      "aliases": ["GHSA-ffc3-869f-jxw9"],
+      "kind": "vulnerability",
+      "title_en": "PyJWT: attackers can forge login tokens when a public key is also accepted as a password",
+      "title_es": "PyJWT: un atacante puede falsificar tokens de sesión cuando una clave pública también se acepta como contraseña",
+      "summary_en": "PyJWT is meant to refuse a public key used as an HMAC secret. That check is skipped when the PEM key has unusual whitespace or line endings, so an attacker who knows your public key (it is public) can sign their own HS256 token and your server accepts it: they log in as anyone. It only happens when jwt.decode allows both an HMAC and an asymmetric algorithm, such as ['RS256', 'HS256'], with the key passed as raw PEM.",
+      "summary_es": "PyJWT debería rechazar una clave pública usada como secreto HMAC. Esa comprobación se salta cuando la clave PEM trae espacios o saltos de línea raros, así que un atacante que conozca tu clave pública (es pública) puede firmar su propio token HS256 y tu servidor lo acepta: entra como quien quiera. Solo pasa cuando jwt.decode permite a la vez un algoritmo HMAC y uno asimétrico, como ['RS256', 'HS256'], con la clave pasada como PEM.",
+      "fix_en": "Upgrade PyJWT to 2.14.0 or later. Until then, allow one algorithm per jwt.decode call (for example algorithms=['RS256']) or load keys through PyJWK.",
+      "fix_es": "Actualiza PyJWT a 2.14.0 o posterior. Mientras tanto, permite un solo algoritmo por llamada a jwt.decode (por ejemplo algorithms=['RS256']) o carga las claves con PyJWK.",
+      "severity": "critical",
+      "cvss": { "score": 9.1, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N", "by": "GitHub" },
+      "published": "2026-09-11",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "PyPI", "package": "pyjwt", "ranges": ["<= 2.13.0"], "fixed": ["2.14.0"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-ffc3-869f-jxw9",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-102268"
+      ]
+    },
+    {
+      "id": "CVE-2026-66066",
+      "aliases": ["GHSA-xr9x-r78c-5hrm"],
+      "kind": "vulnerability",
+      "title_en": "Rails Active Storage: an uploaded image can read your server's secrets and run code",
+      "title_es": "Rails Active Storage: una imagen subida puede leer los secretos de tu servidor y ejecutar código",
+      "summary_en": "Active Storage did not turn off libvips' unsafe operations. Anyone who can upload an image can craft one that makes the server read its own files, including the environment variables that hold secret_key_base and cloud keys, and can reach remote code execution. It applies when the app uses the vips variant processor (the default since load_defaults 7.0) and accepts image uploads from people you do not trust.",
+      "summary_es": "Active Storage no desactivaba las operaciones inseguras de libvips. Cualquiera que pueda subir una imagen puede preparar una que haga al servidor leer sus propios archivos, incluidas las variables de entorno con secret_key_base y claves de la nube, y puede llegar a ejecutar código. Aplica cuando la app usa el procesador de variantes vips (el predeterminado desde load_defaults 7.0) y acepta imágenes de gente en la que no confías.",
+      "fix_en": "Upgrade activestorage (with Rails) to 7.2.3.2, 8.0.5.1 or 8.1.3.1; the fix needs libvips 8.13 or later. Then rotate secret_key_base, the master key and your storage, database and API credentials. Workaround with libvips 8.13+: set VIPS_BLOCK_UNTRUSTED, or call Vips.block_untrusted(true) with ruby-vips 2.2.1+.",
+      "fix_es": "Actualiza activestorage (con Rails) a 7.2.3.2, 8.0.5.1 o 8.1.3.1; el arreglo necesita libvips 8.13 o posterior. Después rota secret_key_base, la master key y tus credenciales de almacenamiento, base de datos y APIs. Alternativa con libvips 8.13+: define VIPS_BLOCK_UNTRUSTED, o llama a Vips.block_untrusted(true) con ruby-vips 2.2.1+.",
+      "severity": "critical",
+      "cvss": { "score": 9.5, "version": "4.0", "vector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H", "by": "GitHub" },
+      "published": "2026-07-29",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "RubyGems", "package": "activestorage", "ranges": ["< 7.2.3.2", ">= 8.0.0.beta1, < 8.0.5.1", ">= 8.1.0.beta1, < 8.1.3.1"], "fixed": ["7.2.3.2", "8.0.5.1", "8.1.3.1"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-xr9x-r78c-5hrm",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-66066"
+      ]
+    },
+    {
+      "id": "CVE-2026-9198",
+      "aliases": [],
+      "kind": "vulnerability",
+      "title_en": "Langflow: anyone on the network can become admin and run code",
+      "title_es": "Langflow: cualquiera en la red puede volverse administrador y ejecutar código",
+      "summary_en": "On a default Langflow install, /api/v1/auto_login hands an admin token to whoever asks, and /api/v1/validate/code runs the Python code it is sent. Together they give an attacker full control of the server and every LLM and API key stored in your flows. CISA lists it as exploited in the wild.",
+      "summary_es": "En una instalación predeterminada de Langflow, /api/v1/auto_login le da un token de administrador a quien lo pida, y /api/v1/validate/code ejecuta el código Python que recibe. Juntos le dan a un atacante el control total del servidor y de todas las claves de LLM y APIs guardadas en tus flujos. CISA lo lista como explotado en ataques reales.",
+      "fix_en": "Upgrade langflow to 1.10.1 or later. Turn off auto-login, keep Langflow off the public internet, and rotate the provider keys and credentials stored in its flows.",
+      "fix_es": "Actualiza langflow a 1.10.1 o posterior. Desactiva el auto-login, saca Langflow de internet público y rota las claves de proveedores y credenciales guardadas en sus flujos.",
+      "severity": "critical",
+      "cvss": { "score": 9.8, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "by": "IBM" },
+      "published": "2026-07-17",
+      "exploited": true,
+      "kev": "2026-08-04",
+      "affected": [
+        { "ecosystem": "PyPI", "package": "langflow", "ranges": [">= 1.0.0, < 1.10.1"], "fixed": ["1.10.1"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-9198",
+        "https://www.ibm.com/support/pages/node/7278927",
+        "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-9198"
+      ]
+    },
+    {
+      "id": "CVE-2026-59822",
+      "aliases": ["GHSA-7488-6r32-c95q", "PYSEC-2026-3479"],
+      "kind": "vulnerability",
+      "title_en": "LiteLLM: any made-up token opens the MCP tools behind the gateway",
+      "title_es": "LiteLLM: cualquier token inventado abre las herramientas MCP detrás del gateway",
+      "summary_en": "LiteLLM is a gateway in front of LLM providers and MCP tools. On its MCP endpoint, a request with an invented Bearer token was let through without a valid LiteLLM key, so an attacker could list and call every MCP tool you configured, and reach whatever those tools connect to (databases, GitHub, internal APIs). CISA lists it as exploited in the wild.",
+      "summary_es": "LiteLLM es un gateway delante de proveedores de LLM y herramientas MCP. En su endpoint MCP, una petición con un token Bearer inventado pasaba sin una clave válida de LiteLLM, así que un atacante podía listar y llamar a cada herramienta MCP que configuraste, y llegar a lo que esas herramientas conectan (bases de datos, GitHub, APIs internas). CISA lo lista como explotado en ataques reales.",
+      "fix_en": "Upgrade litellm to 1.84.0 or later. Review the MCP tool calls in your logs and rotate the credentials of the services those tools reach.",
+      "fix_es": "Actualiza litellm a 1.84.0 o posterior. Revisa las llamadas a herramientas MCP en tus logs y rota las credenciales de los servicios a los que llegan esas herramientas.",
+      "severity": "high",
+      "cvss": { "score": 8.8, "version": "4.0", "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:L/VA:N/SC:N/SI:N/SA:N", "by": "GitHub" },
+      "published": "2026-07-08",
+      "exploited": true,
+      "kev": "2026-09-02",
+      "affected": [
+        { "ecosystem": "PyPI", "package": "litellm", "ranges": ["< 1.84.0"], "fixed": ["1.84.0"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/BerriAI/litellm/security/advisories/GHSA-7488-6r32-c95q",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-59822",
+        "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-59822"
+      ]
+    },
+    {
+      "id": "CVE-2026-48710",
+      "aliases": ["GHSA-86qp-5c8j-p5mr"],
+      "kind": "vulnerability",
+      "title_en": "Starlette (FastAPI): a bad Host header can slip past permission checks",
+      "title_es": "Starlette (FastAPI): una cabecera Host maliciosa puede saltarse los controles de permisos",
+      "summary_en": "Starlette, the base of FastAPI, rebuilt the request URL from the Host header without checking it. A Host such as 'example.com/abc?x=' makes request.url show a different path than the one actually routed, so middleware or endpoints that decide access by looking at request.url can be bypassed. CISA lists it as exploited in the wild.",
+      "summary_es": "Starlette, la base de FastAPI, armaba la URL de la petición con la cabecera Host sin validarla. Un Host como 'example.com/abc?x=' hace que request.url muestre una ruta distinta de la que realmente se atiende, así que el middleware o los endpoints que deciden el acceso mirando request.url se pueden saltar. CISA lo lista como explotado en ataques reales.",
+      "fix_en": "Upgrade starlette to 1.0.1 or later (and FastAPI to a release that allows it; starlette usually comes in through fastapi, so check the version actually installed). Meanwhile, have your proxy reject malformed Host headers, and check permissions on the routed path, not on request.url.",
+      "fix_es": "Actualiza starlette a 1.0.1 o posterior (y FastAPI a una versión que lo permita; starlette suele llegar a través de fastapi, así que revisa la versión instalada de verdad). Mientras tanto, haz que tu proxy rechace cabeceras Host malformadas y revisa permisos sobre la ruta atendida, no sobre request.url.",
+      "severity": "medium",
+      "cvss": { "score": 6.5, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N", "by": "GitHub" },
+      "published": "2026-05-21",
+      "exploited": true,
+      "kev": "2026-09-02",
+      "affected": [
+        { "ecosystem": "PyPI", "package": "starlette", "ranges": ["<= 1.0.0"], "fixed": ["1.0.1"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-86qp-5c8j-p5mr",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-48710",
+        "https://www.cisa.gov/news-events/alerts/2026/09/02/cisa-adds-seven-known-exploited-vulnerabilities-catalog"
+      ]
+    },
+    {
+      "id": "CVE-2026-45321",
+      "aliases": ["GHSA-g7cv-rxg3-hmpx"],
+      "kind": "malware",
+      "title_en": "TanStack Router and Start: 84 poisoned npm versions that steal credentials and spread (\"Mini Shai-Hulud\")",
+      "title_es": "TanStack Router y Start: 84 versiones envenenadas en npm que roban credenciales y se propagan (\"Mini Shai-Hulud\")",
+      "summary_en": "On 2026-05-11 attackers abused TanStack's own publishing pipeline to push malicious versions of 42 @tanstack packages (router, start, devtools and adapters). Installing one ran a hidden script that stole cloud, GitHub, npm, SSH, Kubernetes and Vault credentials, then republished the victim's own npm packages with the same malware. @tanstack/react-query was not affected. CISA lists it as exploited, including by ransomware groups.",
+      "summary_es": "El 2026-05-11 unos atacantes abusaron del propio proceso de publicación de TanStack para subir versiones maliciosas de 42 paquetes @tanstack (router, start, devtools y adaptadores). Instalar una ejecutaba un script oculto que robaba credenciales de la nube, GitHub, npm, SSH, Kubernetes y Vault, y luego volvía a publicar los paquetes npm de la víctima con el mismo malware. @tanstack/react-query no se vio afectado. CISA lo lista como explotado, también por grupos de ransomware.",
+      "fix_en": "Move to the fixed version shown for each package, delete node_modules and reinstall from a clean lockfile. Treat every machine and CI runner that installed a bad version as compromised: from a clean computer, rotate every secret it could reach (cloud, GitHub, npm, SSH, Vault, Kubernetes), check your cloud audit logs, and check that none of your own npm packages was republished.",
+      "fix_es": "Pasa a la versión corregida que se indica para cada paquete, borra node_modules y reinstala desde un lockfile limpio. Trata como comprometida cada máquina y runner de CI que instaló una versión mala: desde otro computador, rota todos los secretos a los que tenía acceso (nube, GitHub, npm, SSH, Vault, Kubernetes), revisa los logs de auditoría de tu nube y verifica que ninguno de tus propios paquetes npm se haya vuelto a publicar.",
+      "severity": "critical",
+      "cvss": { "score": 9.6, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H", "by": "GitHub" },
+      "published": "2026-05-12",
+      "exploited": true,
+      "kev": "2026-05-27",
+      "affected": [
+        { "ecosystem": "npm", "package": "@tanstack/arktype-adapter", "ranges": ["= 1.166.12", "= 1.166.15"], "fixed": ["1.166.16"] },
+        { "ecosystem": "npm", "package": "@tanstack/eslint-plugin-router", "ranges": ["= 1.161.9", "= 1.161.12"], "fixed": ["1.161.13"] },
+        { "ecosystem": "npm", "package": "@tanstack/eslint-plugin-start", "ranges": ["= 0.0.4", "= 0.0.7"], "fixed": ["0.0.8"] },
+        { "ecosystem": "npm", "package": "@tanstack/history", "ranges": ["= 1.161.9", "= 1.161.12"], "fixed": ["1.161.13"] },
+        { "ecosystem": "npm", "package": "@tanstack/nitro-v2-vite-plugin", "ranges": ["= 1.154.12", "= 1.154.15"], "fixed": ["1.154.16"] },
+        { "ecosystem": "npm", "package": "@tanstack/react-router", "ranges": ["= 1.169.5", "= 1.169.8"], "fixed": ["1.169.9"] },
+        { "ecosystem": "npm", "package": "@tanstack/react-router-devtools", "ranges": ["= 1.166.16", "= 1.166.19"], "fixed": ["1.166.20"] },
+        { "ecosystem": "npm", "package": "@tanstack/react-router-ssr-query", "ranges": ["= 1.166.15", "= 1.166.18"], "fixed": ["1.166.19"] },
+        { "ecosystem": "npm", "package": "@tanstack/react-start", "ranges": ["= 1.167.68", "= 1.167.71"], "fixed": ["1.167.72"] },
+        { "ecosystem": "npm", "package": "@tanstack/react-start-client", "ranges": ["= 1.166.51", "= 1.166.54"], "fixed": ["1.166.55"] },
+        { "ecosystem": "npm", "package": "@tanstack/react-start-rsc", "ranges": ["= 0.0.47", "= 0.0.50"], "fixed": ["0.0.51"] },
+        { "ecosystem": "npm", "package": "@tanstack/react-start-server", "ranges": ["= 1.166.55", "= 1.166.58"], "fixed": ["1.166.59"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-cli", "ranges": ["= 1.166.46", "= 1.166.49"], "fixed": ["1.166.50"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-core", "ranges": ["= 1.169.5", "= 1.169.8"], "fixed": ["1.169.9"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-devtools", "ranges": ["= 1.166.16", "= 1.166.19"], "fixed": ["1.166.20"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-devtools-core", "ranges": ["= 1.167.6", "= 1.167.9"], "fixed": ["1.167.10"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-generator", "ranges": ["= 1.166.45", "= 1.166.48"], "fixed": ["1.166.49"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-plugin", "ranges": ["= 1.167.38", "= 1.167.41"], "fixed": ["1.167.42"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-ssr-query-core", "ranges": ["= 1.168.3", "= 1.168.6"], "fixed": ["1.168.7"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-utils", "ranges": ["= 1.161.11", "= 1.161.14"], "fixed": ["1.161.15"] },
+        { "ecosystem": "npm", "package": "@tanstack/router-vite-plugin", "ranges": ["= 1.166.53", "= 1.166.56"], "fixed": ["1.166.57"] },
+        { "ecosystem": "npm", "package": "@tanstack/solid-router", "ranges": ["= 1.169.5", "= 1.169.8"], "fixed": ["1.169.9"] },
+        { "ecosystem": "npm", "package": "@tanstack/solid-router-devtools", "ranges": ["= 1.166.16", "= 1.166.19"], "fixed": ["1.166.20"] },
+        { "ecosystem": "npm", "package": "@tanstack/solid-router-ssr-query", "ranges": ["= 1.166.15", "= 1.166.18"], "fixed": ["1.166.19"] },
+        { "ecosystem": "npm", "package": "@tanstack/solid-start", "ranges": ["= 1.167.65", "= 1.167.68"], "fixed": ["1.167.69"] },
+        { "ecosystem": "npm", "package": "@tanstack/solid-start-client", "ranges": ["= 1.166.50", "= 1.166.53"], "fixed": ["1.166.54"] },
+        { "ecosystem": "npm", "package": "@tanstack/solid-start-server", "ranges": ["= 1.166.54", "= 1.166.57"], "fixed": ["1.166.58"] },
+        { "ecosystem": "npm", "package": "@tanstack/start-client-core", "ranges": ["= 1.168.5", "= 1.168.8"], "fixed": ["1.168.9"] },
+        { "ecosystem": "npm", "package": "@tanstack/start-fn-stubs", "ranges": ["= 1.161.9", "= 1.161.12"], "fixed": ["1.161.13"] },
+        { "ecosystem": "npm", "package": "@tanstack/start-plugin-core", "ranges": ["= 1.169.23", "= 1.169.26"], "fixed": ["1.169.27"] },
+        { "ecosystem": "npm", "package": "@tanstack/start-server-core", "ranges": ["= 1.167.33", "= 1.167.36"], "fixed": ["1.167.37"] },
+        { "ecosystem": "npm", "package": "@tanstack/start-static-server-functions", "ranges": ["= 1.166.44", "= 1.166.47"], "fixed": ["1.166.48"] },
+        { "ecosystem": "npm", "package": "@tanstack/start-storage-context", "ranges": ["= 1.166.38", "= 1.166.41"], "fixed": ["1.166.42"] },
+        { "ecosystem": "npm", "package": "@tanstack/valibot-adapter", "ranges": ["= 1.166.12", "= 1.166.15"], "fixed": ["1.166.16"] },
+        { "ecosystem": "npm", "package": "@tanstack/virtual-file-routes", "ranges": ["= 1.161.10", "= 1.161.13"], "fixed": ["1.161.14"] },
+        { "ecosystem": "npm", "package": "@tanstack/vue-router", "ranges": ["= 1.169.5", "= 1.169.8"], "fixed": ["1.169.9"] },
+        { "ecosystem": "npm", "package": "@tanstack/vue-router-devtools", "ranges": ["= 1.166.16", "= 1.166.19"], "fixed": ["1.166.20"] },
+        { "ecosystem": "npm", "package": "@tanstack/vue-router-ssr-query", "ranges": ["= 1.166.15", "= 1.166.18"], "fixed": ["1.166.19"] },
+        { "ecosystem": "npm", "package": "@tanstack/vue-start", "ranges": ["= 1.167.61", "= 1.167.64"], "fixed": ["1.167.65"] },
+        { "ecosystem": "npm", "package": "@tanstack/vue-start-client", "ranges": ["= 1.166.46", "= 1.166.49"], "fixed": ["1.166.50"] },
+        { "ecosystem": "npm", "package": "@tanstack/vue-start-server", "ranges": ["= 1.166.50", "= 1.166.53"], "fixed": ["1.166.54"] },
+        { "ecosystem": "npm", "package": "@tanstack/zod-adapter", "ranges": ["= 1.166.12", "= 1.166.15"], "fixed": ["1.166.16"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-g7cv-rxg3-hmpx",
+        "https://github.com/TanStack/router/security/advisories/GHSA-g7cv-rxg3-hmpx",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-45321",
+        "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem",
+        "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-45321"
+      ]
+    },
+    {
+      "id": "CVE-2026-44575",
+      "aliases": ["GHSA-267c-6grr-h53f", "CVE-2026-45109", "GHSA-26hh-7cqf-hhc6"],
+      "kind": "vulnerability",
+      "title_en": "Next.js: pages protected only by middleware can be opened without logging in",
+      "title_es": "Next.js: las páginas protegidas solo con middleware se pueden abrir sin iniciar sesión",
+      "summary_en": "Many apps check that the visitor is logged in only in middleware.ts (proxy.ts). With the App Router, crafted .rsc or segment-prefetch URLs reach the same protected page without matching the middleware's rule, so the check never runs and the page's data comes back. The first fix missed middleware.ts under Turbopack; a second advisory closed it.",
+      "summary_es": "Muchas apps revisan que el visitante haya iniciado sesión solo en middleware.ts (proxy.ts). Con el App Router, URLs .rsc o de prefetch de segmentos preparadas llegan a la misma página protegida sin coincidir con la regla del middleware, así que la revisión nunca corre y los datos de la página salen. El primer arreglo no cubría middleware.ts con Turbopack; un segundo aviso lo cerró.",
+      "fix_en": "Upgrade next to 15.5.18 or 16.2.6 at least (better, the newest patch of your line). And check authorization again where the data is read: in the page, route handler or server action, not only in middleware.",
+      "fix_es": "Actualiza next al menos a 15.5.18 o 16.2.6 (mejor, al último parche de tu línea). Y vuelve a revisar la autorización donde se leen los datos: en la página, el route handler o la server action, no solo en el middleware.",
+      "severity": "high",
+      "cvss": { "score": 7.5, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", "by": "GitHub" },
+      "published": "2026-05-06",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "npm", "package": "next", "ranges": [">= 15.2.0, < 15.5.18", ">= 16.0.0, < 16.2.6"], "fixed": ["15.5.18", "16.2.6"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-267c-6grr-h53f",
+        "https://github.com/advisories/GHSA-26hh-7cqf-hhc6"
+      ]
+    },
+    {
+      "id": "CVE-2026-41248",
+      "aliases": ["GHSA-vqx2-fgx2-5wq9"],
+      "kind": "vulnerability",
+      "title_en": "Clerk: routes protected with createRouteMatcher can be reached without signing in",
+      "title_es": "Clerk: las rutas protegidas con createRouteMatcher se pueden abrir sin iniciar sesión",
+      "summary_en": "Clerk is the login service in many AI-built Next.js, Nuxt and Astro apps. Crafted requests slip past the createRouteMatcher check in clerkMiddleware, so pages and APIs 'protected' only with isProtectedRoute(req) → auth.protect() are reachable without an account. Apps that list public routes instead, or call auth() inside each handler, are not affected.",
+      "summary_es": "Clerk es el servicio de inicio de sesión de muchas apps Next.js, Nuxt y Astro hechas con IA. Peticiones preparadas se saltan la revisión de createRouteMatcher en clerkMiddleware, así que las páginas y APIs 'protegidas' solo con isProtectedRoute(req) → auth.protect() se abren sin cuenta. Las apps que en cambio listan las rutas públicas, o llaman a auth() dentro de cada handler, no están afectadas.",
+      "fix_en": "Upgrade the Clerk SDK you use: @clerk/nextjs to 5.7.6, 6.39.2 or 7.2.1; @clerk/nuxt to 1.13.28 or 2.2.2; @clerk/astro to 1.5.7, 2.17.10 or 3.0.15 (drop-in patches). If you import createPathMatcher from @clerk/shared yourself, update it too (2.22.1, 3.47.4 or 4.8.1). Also call auth() in handlers, server components and server actions.",
+      "fix_es": "Actualiza el SDK de Clerk que uses: @clerk/nextjs a 5.7.6, 6.39.2 o 7.2.1; @clerk/nuxt a 1.13.28 o 2.2.2; @clerk/astro a 1.5.7, 2.17.10 o 3.0.15 (parches sin cambios de uso). Si importas createPathMatcher de @clerk/shared tú mismo, actualízalo también (2.22.1, 3.47.4 o 4.8.1). Y llama a auth() en handlers, server components y server actions.",
+      "severity": "critical",
+      "cvss": { "score": 9.1, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N", "by": "GitHub" },
+      "published": "2026-04-15",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "npm", "package": "@clerk/nextjs", "ranges": [">= 5.0.0, < 5.7.6", ">= 6.0.0-snapshot.vb87a27f, < 6.39.2", ">= 7.0.0, < 7.2.1"], "fixed": ["5.7.6", "6.39.2", "7.2.1"] },
+        { "ecosystem": "npm", "package": "@clerk/nuxt", "ranges": [">= 1.1.0, < 1.13.28", ">= 2.0.0, < 2.2.2"], "fixed": ["1.13.28", "2.2.2"] },
+        { "ecosystem": "npm", "package": "@clerk/astro", "ranges": [">= 0.0.1, < 1.5.7", ">= 2.0.0-snapshot.v20241206174604, <= 2.17.9", ">= 3.0.0, < 3.0.15"], "fixed": ["1.5.7", "2.17.10", "3.0.15"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-vqx2-fgx2-5wq9",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-41248"
+      ]
+    },
+    {
+      "id": "GHSA-fw8c-xr5c-95f9",
+      "aliases": ["MAL-2026-2307", "GHSA-2x9r-6wxq-hrr7", "MAL-2026-2306"],
+      "kind": "malware",
+      "title_en": "axios: two hijacked releases installed a remote-access trojan",
+      "title_es": "axios: dos versiones secuestradas instalaban un troyano de acceso remoto",
+      "summary_en": "An attacker took over an axios maintainer's npm account and published axios 1.14.1 and 0.30.4, which pulled in a fake dependency, plain-crypto-js. Its install script downloaded a remote-access trojan, so any computer or CI runner that installed those versions (on 2026-03-31, for about three hours) must be treated as fully taken over.",
+      "summary_es": "Un atacante tomó la cuenta de npm de un mantenedor de axios y publicó axios 1.14.1 y 0.30.4, que traían una dependencia falsa, plain-crypto-js. Su script de instalación descargaba un troyano de acceso remoto, así que cualquier computador o runner de CI que instaló esas versiones (el 2026-03-31, durante unas tres horas) debe tratarse como tomado por completo.",
+      "fix_en": "Pin axios to a clean version (1.14.0 or 0.30.3, or any later clean release) and remove plain-crypto-js from node_modules and the lockfile. From a different computer, rotate every secret the affected machine or runner had, and look for connections to sfrclak[.]com or 142.11.206.73 in your network logs.",
+      "fix_es": "Fija axios en una versión limpia (1.14.0 o 0.30.3, o cualquier versión limpia posterior) y quita plain-crypto-js de node_modules y del lockfile. Desde otro computador, rota todos los secretos que tenía la máquina o el runner afectado, y busca conexiones a sfrclak[.]com o 142.11.206.73 en tus logs de red.",
+      "severity": "critical",
+      "published": "2026-03-31",
+      "exploited": true,
+      "affected": [
+        { "ecosystem": "npm", "package": "axios", "ranges": ["= 1.14.1", "= 0.30.4"], "fixed": ["0.30.3", "1.14.0"] },
+        { "ecosystem": "npm", "package": "plain-crypto-js", "ranges": [">= 0"], "fixed": [] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-fw8c-xr5c-95f9",
+        "https://github.com/advisories/GHSA-2x9r-6wxq-hrr7",
+        "https://github.com/axios/axios/issues/10636",
+        "https://osv.dev/vulnerability/MAL-2026-2307"
+      ]
+    },
+    {
+      "id": "GHSA-5mg7-485q-xm76",
+      "aliases": ["PYSEC-2026-2", "MAL-2026-2144"],
+      "kind": "malware",
+      "title_en": "LiteLLM on PyPI: two poisoned releases stole keys and cloud credentials",
+      "title_es": "LiteLLM en PyPI: dos versiones envenenadas robaban claves y credenciales de la nube",
+      "summary_en": "A token stolen through a compromised security scanner in LiteLLM's build pipeline was used to upload litellm 1.82.7 and 1.82.8 to PyPI on 2026-03-24. Importing them (and for 1.82.8, merely starting Python, through a .pth file) collected SSH keys, cloud and Kubernetes credentials and .env files and sent them to the attacker. The official Docker image was not affected.",
+      "summary_es": "Un token robado a través de un escáner de seguridad comprometido en el pipeline de LiteLLM se usó para subir litellm 1.82.7 y 1.82.8 a PyPI el 2026-03-24. Importarlas (y en 1.82.8, con solo arrancar Python, mediante un archivo .pth) recogía claves SSH, credenciales de la nube y de Kubernetes y archivos .env, y se los enviaba al atacante. La imagen oficial de Docker no se vio afectada.",
+      "fix_en": "Remove litellm and reinstall a clean version (1.82.6 or earlier, or 1.83.0 or later; 1.84.0+ also fixes CVE-2026-59822). Delete any litellm_init.pth left in site-packages, and rotate every secret the machine or CI runner had.",
+      "fix_es": "Desinstala litellm y vuelve a instalar una versión limpia (1.82.6 o anterior, o 1.83.0 o posterior; 1.84.0+ además corrige CVE-2026-59822). Borra cualquier litellm_init.pth que haya quedado en site-packages y rota todos los secretos que tenía la máquina o el runner de CI.",
+      "severity": "critical",
+      "published": "2026-03-25",
+      "exploited": true,
+      "affected": [
+        { "ecosystem": "PyPI", "package": "litellm", "ranges": ["= 1.82.7", "= 1.82.8"], "fixed": ["1.82.6", "1.83.0"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-5mg7-485q-xm76",
+        "https://osv.dev/vulnerability/PYSEC-2026-2",
+        "https://docs.litellm.ai/blog/security-update-march-2026"
+      ]
+    },
+    {
+      "id": "CVE-2025-68613",
+      "aliases": ["GHSA-v98v-ff95-f3cp"],
+      "kind": "vulnerability",
+      "title_en": "n8n: any user who can edit a workflow can run code on the server",
+      "title_es": "n8n: cualquier usuario que pueda editar un flujo puede ejecutar código en el servidor",
+      "summary_en": "In n8n, an expression placed in a workflow could escape its sandbox and run code on the server. Any logged-in user allowed to create or edit workflows could use it to take the server and every credential n8n stores (API keys, database passwords, OAuth tokens). Disclosed in December 2025; CISA added it to its exploited list in March 2026.",
+      "summary_es": "En n8n, una expresión puesta en un flujo podía escapar de su sandbox y ejecutar código en el servidor. Cualquier usuario con sesión que pudiera crear o editar flujos podía usarla para tomar el servidor y todas las credenciales que guarda n8n (claves de API, contraseñas de bases de datos, tokens OAuth). Se publicó en diciembre de 2025; CISA la agregó a su lista de explotadas en marzo de 2026.",
+      "fix_en": "Upgrade n8n to 1.120.4, 1.121.1 or 1.122.0 or later (if you self-host with Docker, update the image tag too). Limit who can edit workflows, and rotate the credentials n8n stores.",
+      "fix_es": "Actualiza n8n a 1.120.4, 1.121.1 o 1.122.0 o posterior (si lo alojas con Docker, actualiza también la etiqueta de la imagen). Limita quién puede editar flujos y rota las credenciales que guarda n8n.",
+      "severity": "critical",
+      "cvss": { "score": 9.9, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H", "by": "GitHub" },
+      "published": "2025-12-19",
+      "exploited": true,
+      "kev": "2026-03-11",
+      "affected": [
+        { "ecosystem": "npm", "package": "n8n", "ranges": [">= 0.211.0, < 1.120.4", ">= 1.121.0, < 1.121.1"], "fixed": ["1.120.4", "1.121.1", "1.122.0"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/n8n-io/n8n/security/advisories/GHSA-v98v-ff95-f3cp",
+        "https://nvd.nist.gov/vuln/detail/CVE-2025-68613",
+        "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2025-68613"
+      ]
+    },
+    {
+      "id": "CVE-2025-55182",
+      "aliases": ["GHSA-fv66-9v8q-g76r", "GHSA-9qr9-h5gf-34mp"],
+      "kind": "vulnerability",
+      "title_en": "React Server Components and Next.js (\"React2Shell\"): one request runs code on the server",
+      "title_es": "React Server Components y Next.js (\"React2Shell\"): una sola petición ejecuta código en el servidor",
+      "summary_en": "A crafted request to any React Server Components endpoint can run code on the server without logging in, even when the app defines no server functions. It hits Next.js App Router apps and other frameworks built on react-server-dom-*. It was mass-exploited within days of its disclosure in December 2025, including by ransomware groups, and many apps built since still pin an old version.",
+      "summary_es": "Una petición preparada a cualquier endpoint de React Server Components puede ejecutar código en el servidor sin iniciar sesión, aunque la app no defina server functions. Afecta a apps Next.js con App Router y a otros frameworks hechos sobre react-server-dom-*. Se explotó en masa a los pocos días de publicarse en diciembre de 2025, también por grupos de ransomware, y muchas apps hechas después todavía fijan una versión vieja.",
+      "fix_en": "Upgrade next to the patched release of your line (15.0.5, 15.1.9, 15.2.6, 15.3.6, 15.4.8, 15.5.7, 16.0.7, or better the newest patch, which also fixes later denial-of-service bugs); 14.3 canaries have no patch, so go back to 14.x stable. Upgrade react-server-dom-webpack, -turbopack or -parcel to 19.0.1, 19.1.2 or 19.2.1 or later if you use them directly. If you ran an affected version on the internet, look for signs of compromise.",
+      "fix_es": "Actualiza next a la versión con parche de tu línea (15.0.5, 15.1.9, 15.2.6, 15.3.6, 15.4.8, 15.5.7, 16.0.7, o mejor el último parche, que también corrige errores posteriores de denegación de servicio); los canary 14.3 no tienen parche, así que vuelve a 14.x estable. Actualiza react-server-dom-webpack, -turbopack o -parcel a 19.0.1, 19.1.2 o 19.2.1 o posterior si los usas directamente. Si tuviste una versión afectada en internet, busca señales de intrusión.",
+      "severity": "critical",
+      "cvss": { "score": 10.0, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H", "by": "Meta" },
+      "published": "2025-12-03",
+      "exploited": true,
+      "kev": "2025-12-05",
+      "affected": [
+        { "ecosystem": "npm", "package": "next", "ranges": [">= 14.3.0-canary.77, < 15.0.5", ">= 15.1.0-canary.0, < 15.1.9", ">= 15.2.0-canary.0, < 15.2.6", ">= 15.3.0-canary.0, < 15.3.6", ">= 15.4.0-canary.0, < 15.4.8", ">= 15.5.0-canary.0, < 15.5.7", ">= 16.0.0-canary.0, < 16.0.7"], "fixed": ["15.0.5", "15.1.9", "15.2.6", "15.3.6", "15.4.8", "15.5.7", "16.0.7"] },
+        { "ecosystem": "npm", "package": "react-server-dom-webpack", "ranges": ["= 19.0.0", ">= 19.1.0, < 19.1.2", "= 19.2.0"], "fixed": ["19.0.1", "19.1.2", "19.2.1"] },
+        { "ecosystem": "npm", "package": "react-server-dom-turbopack", "ranges": ["= 19.0.0", ">= 19.1.0, < 19.1.2", "= 19.2.0"], "fixed": ["19.0.1", "19.1.2", "19.2.1"] },
+        { "ecosystem": "npm", "package": "react-server-dom-parcel", "ranges": ["= 19.0.0", ">= 19.1.0, < 19.1.2", "= 19.2.0"], "fixed": ["19.0.1", "19.1.2", "19.2.1"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://react.dev/blog/2025/12/03/critical-security-vulnerability-in-react-server-components",
+        "https://github.com/advisories/GHSA-fv66-9v8q-g76r",
+        "https://github.com/advisories/GHSA-9qr9-h5gf-34mp",
+        "https://nvd.nist.gov/vuln/detail/CVE-2025-55182",
+        "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2025-55182"
+      ]
+    },
+    {
+      "id": "CVE-2025-54068",
+      "aliases": ["GHSA-29cq-5w36-x7w3"],
+      "kind": "vulnerability",
+      "title_en": "Livewire 3 (Laravel, Filament): attackers can run commands on the server without logging in",
+      "title_es": "Livewire 3 (Laravel, Filament): un atacante puede ejecutar comandos en el servidor sin iniciar sesión",
+      "summary_en": "A flaw in how Livewire 3 rebuilds a component's state from the browser's request lets an attacker with no account run commands on the server, when a component is mounted and set up in a particular way. Filament 3 and later use Livewire, so Filament admin panels can be affected too. Disclosed in July 2025; CISA added it to its exploited list in March 2026.",
+      "summary_es": "Una falla en cómo Livewire 3 reconstruye el estado de un componente a partir de la petición del navegador deja que un atacante sin cuenta ejecute comandos en el servidor, cuando un componente está montado y configurado de cierta forma. Filament 3 y posteriores usan Livewire, así que los paneles de administración Filament también pueden estar afectados. Se publicó en julio de 2025; CISA la agregó a su lista de explotadas en marzo de 2026.",
+      "fix_en": "Upgrade livewire/livewire to 3.6.4 or later (composer update livewire/livewire; with Filament, update Filament so it can pull it in). The advisory knows no workaround.",
+      "fix_es": "Actualiza livewire/livewire a 3.6.4 o posterior (composer update livewire/livewire; con Filament, actualiza Filament para que lo traiga). El aviso no conoce otra salida.",
+      "severity": "critical",
+      "cvss": { "score": 9.2, "version": "4.0", "vector": "CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N", "by": "GitHub" },
+      "published": "2025-07-17",
+      "exploited": true,
+      "kev": "2026-03-20",
+      "affected": [
+        { "ecosystem": "Packagist", "package": "livewire/livewire", "ranges": [">= 3.0.0-beta.1, < 3.6.4"], "fixed": ["3.6.4"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-29cq-5w36-x7w3",
+        "https://nvd.nist.gov/vuln/detail/CVE-2025-54068",
+        "https://www.cisa.gov/news-events/alerts/2026/03/20/cisa-adds-five-known-exploited-vulnerabilities-catalog"
+      ]
+    }
+  ]
+}

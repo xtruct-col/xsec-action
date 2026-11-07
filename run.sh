@@ -5,11 +5,13 @@
 #   2. scan base-url (production) to JSON, if given: the baseline;
 #   3. scan url (the preview) once, if given: Markdown, JSON and the diff;
 #   4. review the code the pull request adds (`xsec review`), if it runs;
+#   4b. check the checkout's lockfiles against recent advisories (`xsec deps`),
+#      if it runs;
 #   5. upload the scan's JSON to the xsec dashboard, if a token is given;
 #   6. write the job summary and a sticky pull-request comment, and post the
 #      review's inline comments (one GitHub review, comments not repeated);
-#   7. exit 0 ok, 2 if the scan or the review found something at or above
-#      its threshold, 1 if either could not run.
+#   7. exit 0 ok, 2 if the scan, the review or the dependency check found
+#      something at or above its threshold, 1 if one could not run.
 #
 # Overrides for tests and self-hosted runners: XSEC_BIN (use this binary,
 # skip the download), XSEC_RELEASE_BASE (where releases live),
@@ -40,6 +42,8 @@ COMMENT="$(bool comment "${INPUT_COMMENT:-true}")"
 REVIEW="$(lower "$(trim "${INPUT_REVIEW:-auto}")")"
 REVIEW_FAIL_ON="$(trim "${INPUT_REVIEW_FAIL_ON:-high}")"
 REVIEW_BASE="$(trim "${INPUT_REVIEW_BASE:-}")"
+DEPS="$(lower "$(trim "${INPUT_DEPS:-auto}")")"
+DEPS_FAIL_ON="$(trim "${INPUT_DEPS_FAIL_ON:-critical}")"
 VERSION="$(trim "${INPUT_VERSION:-latest}")"
 XSEC_API="$(trim "${INPUT_XSEC_API:-https://xsec-api.91.107.213.88.sslip.io}")"
 XSEC_API="${XSEC_API%/}"
@@ -58,6 +62,10 @@ esac
 case "$REVIEW" in
   auto | true | false) ;;
   *) fail "input review must be auto, true or false" ;;
+esac
+case "$DEPS" in
+  auto | true | false) ;;
+  *) fail "input deps must be auto, true or false" ;;
 esac
 
 # Secrets: mask them before anything can print them. Each header's value is
@@ -114,7 +122,20 @@ case "$REVIEW" in
     fi
     ;;
 esac
-if [ -z "$URL" ] && [ "$RUN_REVIEW" = false ]; then
+# Whether the dependency check runs: on a pull_request event whose checkout
+# (the working directory) has a lockfile (auto), or whenever asked (true).
+has_lockfile() {
+  [ -n "$(find . \( -name node_modules -o -name .git -o -name vendor -o -name .venv \) -prune -o -type f \( \
+    -name package-lock.json -o -name npm-shrinkwrap.json -o -name pnpm-lock.yaml -o -name yarn.lock -o -name bun.lock \
+    -o -name 'requirements*.txt' -o -name poetry.lock -o -name uv.lock -o -name Pipfile.lock -o -name Gemfile.lock \
+    -o -name composer.lock -o -name go.sum -o -name .nvmrc -o -name .node-version \) -print 2> /dev/null | head -n 1)" ]
+}
+RUN_DEPS=false
+case "$DEPS" in
+  auto) [ -n "$PR_BASE" ] && has_lockfile && RUN_DEPS=true ;;
+  true) RUN_DEPS=true ;;
+esac
+if [ -z "$URL" ] && [ "$RUN_REVIEW" = false ] && [ "$RUN_DEPS" = false ]; then
   fail "input url is required (or run on a pull_request event with review: auto, the default)"
 fi
 
@@ -256,6 +277,38 @@ if [ "$RUN_REVIEW" = true ]; then
   fi
 fi
 
+# ---- 4b. the dependency check -------------------------------------------------
+
+DEPS_EXIT=0
+DEPS_RAN=false
+if [ "$RUN_DEPS" = true ]; then
+  # A CLI older than `xsec deps` (a pinned version) answers a usage error
+  # with exit 2, which must not read as findings.
+  if ! "$XSEC_BIN" deps --help > /dev/null 2>&1; then
+    if [ "$DEPS" = true ]; then
+      echo "::error::xsec-action: this xsec CLI has no dependency check (xsec deps); use a newer version"
+      DEPS_EXIT=1
+    else
+      echo "::notice::xsec-action: no dependency check: this xsec CLI is older than xsec deps"
+    fi
+  else
+    log "checking the lockfiles against recent advisories"
+    set +e
+    "$XSEC_BIN" deps . --fail-on "$DEPS_FAIL_ON" --format markdown --out "$OUT/deps.md" --json-out "$OUT/deps.json"
+    DEPS_EXIT=$?
+    set -e
+    output deps-exit-code "$DEPS_EXIT"
+    if [ "$DEPS_EXIT" -eq 0 ] || [ "$DEPS_EXIT" -eq 2 ]; then
+      DEPS_RAN=true
+      output deps-json "$OUT/deps.json"
+      output deps-markdown "$OUT/deps.md"
+      output deps-findings "$(jq '.findings | length' "$OUT/deps.json")"
+    else
+      echo "::error::xsec-action: the dependency check could not run (exit $DEPS_EXIT)"
+    fi
+  fi
+fi
+
 # ---- 5. upload ----------------------------------------------------------------
 
 DASHBOARD=""
@@ -295,10 +348,11 @@ MARKER="<!-- xsec-action -->"
 comment="$OUT/comment.md"
 {
   echo "$MARKER"
-  if [ "$EXIT" -eq 2 ] || [ "$REVIEW_EXIT" -eq 2 ]; then
+  if [ "$EXIT" -eq 2 ] || [ "$REVIEW_EXIT" -eq 2 ] || [ "$DEPS_EXIT" -eq 2 ]; then
     echo "> [!CAUTION]"
     [ "$EXIT" -eq 2 ] && echo "> **xsec: this check fails**: $WHAT at or above \`$FAIL_ON\`."
     [ "$REVIEW_EXIT" -eq 2 ] && echo "> **xsec: this check fails**: the code review found problems at or above \`$REVIEW_FAIL_ON\`."
+    [ "$DEPS_EXIT" -eq 2 ] && echo "> **xsec: this check fails**: dependencies with known problems at or above \`$DEPS_FAIL_ON\`."
     echo
   fi
   if [ -n "$URL" ]; then
@@ -307,6 +361,10 @@ comment="$OUT/comment.md"
   fi
   if [ "$REVIEWED" = true ]; then
     cat "$OUT/review.md"
+    echo
+  fi
+  if [ "$DEPS_RAN" = true ]; then
+    cat "$OUT/deps.md"
     echo
   fi
   if [ -n "$DASHBOARD" ]; then echo "[Open this scan in the xsec dashboard]($DASHBOARD) · "; fi
@@ -367,6 +425,12 @@ if [ "$REVIEW_EXIT" -eq 2 ]; then
   echo "::error::xsec: the code review found problems at or above '$REVIEW_FAIL_ON' (see the comments on the pull request)"
   FINAL=2
 elif [ "$REVIEW_EXIT" -ne 0 ]; then
+  FINAL=1
+fi
+if [ "$DEPS_EXIT" -eq 2 ]; then
+  echo "::error::xsec: dependencies with known problems at or above '$DEPS_FAIL_ON' (see the job summary)"
+  FINAL=2
+elif [ "$DEPS_EXIT" -ne 0 ] && [ "$FINAL" -eq 0 ]; then
   FINAL=1
 fi
 output exit-code "$FINAL"

@@ -1,5 +1,5 @@
 name: "xsec: OWASP Top 10 scan and code review"
-description: "Scan each pull request's preview deployment for the OWASP Top 10, review the code it adds for security mistakes, comment in plain words, and fail on new findings."
+description: "Scan each pull request's preview deployment for the OWASP Top 10, review the code it adds for security mistakes, check its dependencies against recent advisories, comment in plain words, and fail on new findings."
 author: "xtruct"
 branding:
   icon: shield
@@ -22,6 +22,14 @@ inputs:
     description: "The commit or branch to compare with (default: the pull request's base commit; outside a pull_request event, the merge base with origin/main)."
     required: false
     default: ""
+  deps:
+    description: "auto | true | false: check the checkout's lockfiles (npm, pnpm, yarn, bun, pip, poetry, uv, bundler, composer, go) against xsec's list of recent, serious advisories, offline. auto runs on pull_request events when the checkout has a lockfile."
+    required: false
+    default: "auto"
+  deps-fail-on:
+    description: "never | low | medium | high | critical: fail the check when an installed dependency is named by an advisory at or above this severity. Critical by default: such a problem is usually older than the pull request."
+    required: false
+    default: "critical"
   base-url:
     description: "Production (or main's deployment), scanned with the same options as the baseline: only findings the preview adds are new. Empty: every finding counts."
     required: false
@@ -69,7 +77,7 @@ inputs:
 
 outputs:
   exit-code:
-    description: "The action's exit code: 0 ok, 2 new scan findings at or above fail-on or code review findings at or above review-fail-on, 1 could not run."
+    description: "The action's exit code: 0 ok, 2 new scan findings at or above fail-on, code review findings at or above review-fail-on or dependency problems at or above deps-fail-on, 1 could not run."
     value: ${{ steps.scan.outputs.exit-code }}
   review-exit-code:
     description: "The code review's own exit code (0, 2 or 1), when it ran."
@@ -83,6 +91,18 @@ outputs:
   review-json:
     description: "Path to the code review in JSON."
     value: ${{ steps.scan.outputs.review-json }}
+  deps-exit-code:
+    description: "The dependency check's own exit code (0, 2 or 1), when it ran."
+    value: ${{ steps.scan.outputs.deps-exit-code }}
+  deps-findings:
+    description: "How many installed dependencies an advisory names, when the check ran."
+    value: ${{ steps.scan.outputs.deps-findings }}
+  deps-markdown:
+    description: "Path to the dependency check in Markdown."
+    value: ${{ steps.scan.outputs.deps-markdown }}
+  deps-json:
+    description: "Path to the dependency check in JSON."
+    value: ${{ steps.scan.outputs.deps-json }}
   new-findings:
     description: "How many findings are new compared with base-url (all findings without one)."
     value: ${{ steps.scan.outputs.new-findings }}
@@ -111,6 +131,8 @@ runs:
         INPUT_REVIEW: ${{ inputs.review }}
         INPUT_REVIEW_FAIL_ON: ${{ inputs.review-fail-on }}
         INPUT_REVIEW_BASE: ${{ inputs.review-base }}
+        INPUT_DEPS: ${{ inputs.deps }}
+        INPUT_DEPS_FAIL_ON: ${{ inputs.deps-fail-on }}
         INPUT_PASSIVE: ${{ inputs.passive }}
         INPUT_HEADERS: ${{ inputs.headers }}
         INPUT_SEEDS: ${{ inputs.seeds }}
