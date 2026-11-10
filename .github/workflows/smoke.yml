@@ -1,0 +1,31 @@
+# Runs this action against xsec's own dashboard, passively, to check that a
+# release works end to end: download, checksum, scan, job summary.
+name: smoke
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v4
+      - id: xsec
+        uses: ./
+        with:
+          url: https://security.xtruct.net/
+          fail-on: never
+          comment: "false"
+      - name: outputs
+        run: |
+          echo "exit-code=${{ steps.xsec.outputs.exit-code }}"
+          test -s "${{ steps.xsec.outputs.report-json }}"

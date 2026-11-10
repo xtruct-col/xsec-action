@@ -62,6 +62,10 @@ inputs:
     description: "A CI token for this site from the xsec dashboard (xsec_ci_...). Given: the report is uploaded to the dashboard, and the code review adds an AI review (the PR's changed lines, secrets redacted, go to xsec and OpenAI)."
     required: false
     default: ""
+  upload:
+    description: "true: with xsec-token, send the scan's report and what the code review and dependency check found (each finding's analysis and the few redacted lines it is about, never whole files; packages and versions) to the xsec dashboard. false: only the AI review uses the token."
+    required: false
+    default: "true"
   xsec-api:
     description: "The xsec API the report is uploaded to."
     required: false
@@ -118,6 +122,9 @@ outputs:
   dashboard-url:
     description: "The scan in the xsec dashboard, when uploaded."
     value: ${{ steps.scan.outputs.dashboard-url }}
+  ci-run-url:
+    description: "Where the dashboard shows this run's code review and dependency results, when sent."
+    value: ${{ steps.scan.outputs.ci-run-url }}
 
 runs:
   using: composite
@@ -138,6 +145,7 @@ runs:
         INPUT_SEEDS: ${{ inputs.seeds }}
         INPUT_COMMENT: ${{ inputs.comment }}
         INPUT_XSEC_TOKEN: ${{ inputs.xsec-token }}
+        INPUT_UPLOAD: ${{ inputs.upload }}
         INPUT_XSEC_API: ${{ inputs.xsec-api }}
         INPUT_VERSION: ${{ inputs.version }}
         INPUT_ARGS: ${{ inputs.args }}

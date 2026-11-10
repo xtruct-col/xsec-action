@@ -8,6 +8,9 @@
 #   4b. check the checkout's lockfiles against recent advisories (`xsec deps`),
 #      if it runs;
 #   5. upload the scan's JSON to the xsec dashboard, if a token is given;
+#   5b. send what the review and the dependency check found (each finding's
+#      analysis and only its redacted lines; D-065) to the dashboard, if a
+#      token is given;
 #   6. write the job summary and a sticky pull-request comment, and post the
 #      review's inline comments (one GitHub review, comments not repeated);
 #   7. exit 0 ok, 2 if the scan, the review or the dependency check found
@@ -39,6 +42,7 @@ BASE_URL="$(trim "${INPUT_BASE_URL:-}")"
 FAIL_ON="$(trim "${INPUT_FAIL_ON:-high}")"
 PASSIVE="$(bool passive "${INPUT_PASSIVE:-true}")"
 COMMENT="$(bool comment "${INPUT_COMMENT:-true}")"
+UPLOAD="$(bool upload "${INPUT_UPLOAD:-true}")"
 REVIEW="$(lower "$(trim "${INPUT_REVIEW:-auto}")")"
 REVIEW_FAIL_ON="$(trim "${INPUT_REVIEW_FAIL_ON:-high}")"
 REVIEW_BASE="$(trim "${INPUT_REVIEW_BASE:-}")"
@@ -143,6 +147,8 @@ PR="$(ev '.pull_request.number // .issue.number')"
 if [ -z "$PR" ] && [ -n "$SHA" ] && { [ "$COMMENT" = "true" ] || [ -n "$TOKEN" ] || [ "$RUN_REVIEW" = true ]; } && [ -n "${GH_TOKEN:-}" ] && command -v gh > /dev/null; then
   # deployment_status and push events carry no PR: find the open one for the commit.
   PR="$(gh api "repos/$REPO/commits/$SHA/pulls" --jq '[.[] | select(.state == "open")][0].number // empty' 2> /dev/null || true)"
+  # A refused lookup (no pull-requests: read) prints the error's JSON: no PR.
+  case "$PR" in *[!0-9]*) PR="" ;; esac
 fi
 RUN_URL="${GITHUB_SERVER_URL:-https://github.com}/$REPO/actions/runs/${GITHUB_RUN_ID:-0}"
 LINK="$(ev '.pull_request.html_url')"
@@ -267,13 +273,16 @@ if [ "$RUN_REVIEW" = true ]; then
   XSEC_TOKEN="$TOKEN" "$XSEC_BIN" "${review_args[@]}"
   REVIEW_EXIT=$?
   set -e
+  REVIEW_CLI_EXIT=$REVIEW_EXIT
+  # A usage error also exits 2; findings always come with the JSON report.
+  if [ "$REVIEW_EXIT" -eq 2 ] && [ ! -f "$OUT/review.json" ]; then REVIEW_EXIT=1; fi
   output review-exit-code "$REVIEW_EXIT"
   if [ "$REVIEW_EXIT" -eq 0 ] || [ "$REVIEW_EXIT" -eq 2 ]; then
     output review-json "$OUT/review.json"
     output review-markdown "$OUT/review.md"
     output review-findings "$(jq '.findings | length' "$OUT/review.json")"
   else
-    echo "::error::xsec-action: the code review could not run (exit $REVIEW_EXIT)"
+    echo "::error::xsec-action: the code review could not run (exit $REVIEW_CLI_EXIT)"
   fi
 fi
 
@@ -311,23 +320,31 @@ fi
 
 # ---- 5. upload ----------------------------------------------------------------
 
+# POST a JSON file to the xsec API; prints the HTTP status. The token goes
+# in a header file, never on curl's command line.
+post_api() {
+  local path="$1" body="$2" response="$3" auth="$OUT/.auth" status
+  (umask 077 && printf 'Authorization: Bearer %s\n' "$TOKEN" > "$auth")
+  set +e
+  status="$(curl -sS --retry 2 -o "$response" -w '%{http_code}' -X POST \
+    -H @"$auth" -H 'Content-Type: application/json' --data-binary @"$body" "$XSEC_API$path")"
+  set -e
+  rm -f "$auth"
+  printf '%s' "$status"
+}
+
 DASHBOARD=""
-if [ -n "$TOKEN" ] && [ -n "$URL" ]; then
+SCAN_ID=""
+if [ -n "$TOKEN" ] && [ "$UPLOAD" = true ] && [ -n "$URL" ]; then
   body="$OUT/upload.json"
   jq -n --slurpfile report "$OUT/report.json" --arg repo "$REPO" --arg sha "$SHA" --arg url "$LINK" --arg pr "$PR" '
     {report: $report[0], ref: ({repository: $repo, sha: $sha, url: $url}
       + (if $pr == "" then {} else {pullRequest: ($pr | tonumber)} end))}' > "$body"
-  # The token goes in a header file, never on curl's command line.
-  auth="$OUT/.auth"
-  (umask 077 && printf 'Authorization: Bearer %s\n' "$TOKEN" > "$auth")
-  set +e
-  status="$(curl -sS --retry 2 -o "$OUT/upload-response.json" -w '%{http_code}' -X POST \
-    -H @"$auth" -H 'Content-Type: application/json' --data-binary @"$body" "$XSEC_API/v1/ci/reports")"
-  set -e
-  rm -f "$auth"
+  status="$(post_api /v1/ci/reports "$body" "$OUT/upload-response.json")"
   case "$status" in
     201)
       DASHBOARD="$(jq -r '.url // empty' "$OUT/upload-response.json" 2> /dev/null || true)"
+      SCAN_ID="$(jq -r '.scanId // empty' "$OUT/upload-response.json" 2> /dev/null || true)"
       log "uploaded to the xsec dashboard: $DASHBOARD"
       output dashboard-url "$DASHBOARD"
       ;;
@@ -338,12 +355,61 @@ if [ -n "$TOKEN" ] && [ -n "$URL" ]; then
   esac
 fi
 
+# ---- 5b. the review's and the dependency check's results ----------------------
+
+REVIEWED=false
+[ "$RUN_REVIEW" = true ] && [ -f "$OUT/review.md" ] && { [ "$REVIEW_EXIT" -eq 0 ] || [ "$REVIEW_EXIT" -eq 2 ]; } && REVIEWED=true
+RUN_DASHBOARD=""
+if [ -n "$TOKEN" ] && [ "$UPLOAD" = true ] && { [ "$REVIEWED" = true ] || [ "$DEPS_RAN" = true ]; }; then
+  rev="$OUT/run-review.json"
+  dep="$OUT/run-deps.json"
+  if [ "$REVIEWED" = true ]; then cp "$OUT/review.json" "$rev"; else echo null > "$rev"; fi
+  if [ "$DEPS_RAN" = true ]; then cp "$OUT/deps.json" "$dep"; else echo null > "$dep"; fi
+  # The branch: a pull request's head, or the pushed branch.
+  BRANCH="${GITHUB_HEAD_REF:-}"
+  if [ -z "$BRANCH" ]; then
+    case "${GITHUB_REF:-}" in refs/heads/*) BRANCH="${GITHUB_REF#refs/heads/}" ;; esac
+  fi
+  # What D-065 stores: each finding's place, kind and analysis, and only the
+  # lines it is about (the CLI's `excerpt`, secrets already redacted); never
+  # whole files or the diff.
+  jq -n --slurpfile review "$rev" --slurpfile deps "$dep" --arg repo "$REPO" --arg sha "$SHA" --arg url "$LINK" --arg pr "$PR" \
+    --arg run "$RUN_URL" --arg scan "$SCAN_ID" --arg reviewFailOn "$REVIEW_FAIL_ON" --argjson reviewExit "$REVIEW_EXIT" \
+    --arg depsFailOn "$DEPS_FAIL_ON" --argjson depsExit "$DEPS_EXIT" --arg event "${GITHUB_EVENT_NAME:-}" --arg branch "$BRANCH" '
+    $review[0] as $r | $deps[0] as $d
+    | {ref: ({repository: $repo, sha: $sha, url: $url} + (if $pr == "" then {} else {pullRequest: ($pr | tonumber)} end))}
+    + (if ($event | test("^[a-z_]{1,40}$")) then {event: $event} else {} end)
+    + (if $branch == "" or ($branch | test(" ")) then {} else {branch: $branch[:255]} end)
+    + (if ($run | startswith("https://")) then {runUrl: $run} else {} end)
+    + (if $scan == "" then {} else {scanId: $scan} end)
+    + (if $r == null then {} else {review: {
+        failOn: $reviewFailOn, failed: ($reviewExit == 2), total: ($r.findings | length),
+        reviewed: $r.reviewed, skipped: ($r.skipped | length),
+        ai: ({status: $r.ai.status} + (if $r.ai.model then {model: $r.ai.model} else {} end)),
+        findings: [$r.findings[:200][] | {rule, source, file, line, severity, confidence, category, cwe, title,
+          explanation: ((.explanation // "")[:2000] | select(. != "") // null), fix: ((.fix // "")[:2000] | select(. != "") // null), excerpt: ((.excerpt // [])[:15])}]}} end)
+    + (if $d == null then {} else {deps: {
+        failOn: $depsFailOn, failed: ($depsExit == 2), total: ($d.findings | length),
+        packages: $d.packages, lockfiles: ($d.lockfiles | length), advisoriesUpdated: $d.advisoriesUpdated,
+        findings: [$d.findings[:200][] | {advisory, severity, kind, exploited, ecosystem, package, installed, upgrade, files: .files[:20]}]}} end)' \
+    > "$OUT/run.json"
+  status="$(post_api /v1/ci/runs "$OUT/run.json" "$OUT/run-response.json")"
+  case "$status" in
+    201)
+      RUN_DASHBOARD="$(jq -r '.url // empty' "$OUT/run-response.json" 2> /dev/null || true)"
+      log "sent the review and dependency results to the xsec dashboard: $RUN_DASHBOARD"
+      output ci-run-url "$RUN_DASHBOARD"
+      ;;
+    401) echo "::warning::xsec-action: the dashboard refused the xsec-token (401): make a new CI token for this site" ;;
+    429) echo "::warning::xsec-action: this site's monthly cap of CI runs on the dashboard is reached (429)" ;;
+    *) echo "::warning::xsec-action: sending the review and dependency results to $XSEC_API failed (HTTP ${status:-none})" ;;
+  esac
+fi
+
 # ---- 6. summary, comment and review -----------------------------------------------
 
 WHAT="findings"
 [ -f "$OUT/diff.json" ] && WHAT="new findings (compared with $BASE_URL)"
-REVIEWED=false
-[ "$RUN_REVIEW" = true ] && [ -f "$OUT/review.md" ] && { [ "$REVIEW_EXIT" -eq 0 ] || [ "$REVIEW_EXIT" -eq 2 ]; } && REVIEWED=true
 MARKER="<!-- xsec-action -->"
 comment="$OUT/comment.md"
 {
@@ -368,6 +434,7 @@ comment="$OUT/comment.md"
     echo
   fi
   if [ -n "$DASHBOARD" ]; then echo "[Open this scan in the xsec dashboard]($DASHBOARD) · "; fi
+  if [ -n "$RUN_DASHBOARD" ]; then echo "[See these results in the xsec dashboard]($RUN_DASHBOARD) · "; fi
   echo "<sub>[xsec](https://github.com/xtruct-col/xsec-action) · [run]($RUN_URL) · commit \`${SHA:0:12}\`</sub>"
 } > "$comment"
 # GitHub caps a comment at 65536 characters.
