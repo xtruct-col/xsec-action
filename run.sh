@@ -348,6 +348,11 @@ if [ -n "$TOKEN" ] && [ "$UPLOAD" = true ] && [ -n "$URL" ]; then
       log "uploaded to the xsec dashboard: $DASHBOARD"
       output dashboard-url "$DASHBOARD"
       ;;
+    400)
+      # One line, bounded: a newline would start another workflow command.
+      why="$(jq -r '.error // empty | tostring | gsub("[[:cntrl:]]"; " ") | .[0:300]' "$OUT/upload-response.json" 2> /dev/null || true)"
+      echo "::warning::xsec-action: the dashboard refused the report (400): ${why:-no reason given}"
+      ;;
     401) echo "::warning::xsec-action: the dashboard refused the xsec-token (401): make a new CI token for this site" ;;
     413) echo "::warning::xsec-action: the report is too large for the dashboard (413)" ;;
     429) echo "::warning::xsec-action: this site's monthly CI upload cap is reached (429)" ;;

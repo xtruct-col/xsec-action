@@ -229,7 +229,8 @@ permissions:
 
 jobs:
   scan:
-    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment != 'Production'
+    # Only Vercel's previews: other deployments (a release, Production) send this event too.
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.creator.login == 'vercel[bot]' && startsWith(github.event.deployment.environment, 'Preview')
     runs-on: ubuntu-latest
     steps:
       - uses: xtruct-col/xsec-action@v1
