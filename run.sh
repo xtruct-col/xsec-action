@@ -129,10 +129,13 @@ esac
 # Whether the dependency check runs: on a pull_request event whose checkout
 # (the working directory) has a lockfile (auto), or whenever asked (true).
 has_lockfile() {
-  [ -n "$(find . \( -name node_modules -o -name .git -o -name vendor -o -name .venv \) -prune -o -type f \( \
+  [ -n "$(find . \( -name node_modules -o -name .git -o -name vendor -o -name .venv -o -name target -o -name build \
+    -o -name .build -o -name deps -o -name _build -o -name Pods -o -name .dart_tool -o -name .gradle \) -prune -o -type f \( \
     -name package-lock.json -o -name npm-shrinkwrap.json -o -name pnpm-lock.yaml -o -name yarn.lock -o -name bun.lock \
     -o -name 'requirements*.txt' -o -name poetry.lock -o -name uv.lock -o -name Pipfile.lock -o -name Gemfile.lock \
-    -o -name composer.lock -o -name go.sum -o -name .nvmrc -o -name .node-version \) -print 2> /dev/null | head -n 1)" ]
+    -o -name composer.lock -o -name go.sum -o -name Cargo.lock -o -name packages.lock.json -o -name '*gradle.lockfile' \
+    -o -name pom.xml -o -name Package.resolved -o -name pubspec.lock -o -name mix.lock \
+    -o -name .nvmrc -o -name .node-version \) -print 2> /dev/null | head -n 1)" ]
 }
 RUN_DEPS=false
 case "$DEPS" in

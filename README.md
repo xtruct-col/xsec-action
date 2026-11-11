@@ -77,7 +77,9 @@ code review `review-exit-code`, `review-findings`, `review-markdown` and
 
 On a pull request whose checkout has a lockfile, the action also runs
 `xsec deps`: it compares the lockfiles (npm, pnpm, yarn, bun, pip
-requirements, poetry, uv, Pipfile, bundler, composer, go.sum, `.nvmrc`)
+requirements, poetry, uv, Pipfile, bundler, composer, go.sum, Cargo.lock,
+NuGet `packages.lock.json`, `gradle.lockfile`, Maven `pom.xml`, Swift
+`Package.resolved`, `pubspec.lock`, `mix.lock`, `.nvmrc`)
 with xsec's short list of recent, serious advisories and hijacked releases,
 built into the CLI, and adds the result to the comment: what is installed,
 why it matters and the version to move to. Nothing leaves the runner. It

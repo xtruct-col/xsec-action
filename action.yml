@@ -23,7 +23,7 @@ inputs:
     required: false
     default: ""
   deps:
-    description: "auto | true | false: check the checkout's lockfiles (npm, pnpm, yarn, bun, pip, poetry, uv, bundler, composer, go) against xsec's list of recent, serious advisories, offline. auto runs on pull_request events when the checkout has a lockfile."
+    description: "auto | true | false: check the checkout's lockfiles (npm, pnpm, yarn, bun, pip, poetry, uv, bundler, composer, go, cargo, NuGet, Gradle, Maven pom.xml, Swift, pub, mix) against xsec's list of recent, serious advisories, offline. auto runs on pull_request events when the checkout has a lockfile."
     required: false
     default: "auto"
   deps-fail-on:

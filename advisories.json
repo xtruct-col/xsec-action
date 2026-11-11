@@ -1,7 +1,30 @@
 {
   "schema": 1,
-  "updated": "2026-11-06",
+  "updated": "2026-11-10",
   "advisories": [
+    {
+      "id": "CVE-2026-115908",
+      "aliases": ["GHSA-hjqx-j4rw-g7xv"],
+      "kind": "vulnerability",
+      "title_en": "zip (Rust): unpacking an uploaded ZIP can write files outside the target folder",
+      "title_es": "zip (Rust): descomprimir un ZIP subido puede escribir archivos fuera de la carpeta destino",
+      "summary_en": "The zip crate checks symbolic links inside an archive only by their text, so a crafted ZIP can plant a symlink and then write through it to any path the process can write. An app that extracts ZIP files that users upload can have its code or config overwritten, which can lead to taking over the server. The attacker needs to know or guess where the files are extracted.",
+      "summary_es": "El crate zip revisa los enlaces simbólicos de un archivo solo por su texto, así que un ZIP preparado puede crear un enlace y luego escribir a través de él en cualquier ruta donde el proceso pueda escribir. Una app que descomprime ZIP que suben los usuarios puede terminar con su código o configuración sobrescritos, lo que puede dar el control del servidor. El atacante necesita saber o adivinar dónde se extraen los archivos.",
+      "fix_en": "Upgrade zip to 9.0.0 or later (cargo update -p zip; 9.x is a major version, check the changelog). Until then, do not call ZipArchive::extract on untrusted archives: iterate the entries yourself, skip symlinks, and write only to paths you build under a fresh temporary directory.",
+      "fix_es": "Actualiza zip a 9.0.0 o superior (cargo update -p zip; 9.x es versión mayor, revisa el changelog). Mientras tanto, no llames ZipArchive::extract con archivos de terceros: recorre las entradas tú mismo, ignora los enlaces simbólicos y escribe solo en rutas que construyas dentro de un directorio temporal nuevo.",
+      "severity": "high",
+      "cvss": { "score": 7.4, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H", "by": "GitHub" },
+      "published": "2026-10-29",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "crates.io", "package": "zip", "ranges": [">= 7.2.0, < 9.0.0"], "fixed": ["9.0.0"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-hjqx-j4rw-g7xv",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-115908"
+      ]
+    },
     {
       "id": "CVE-2026-111497",
       "aliases": [],
@@ -28,6 +51,30 @@
       ]
     },
     {
+      "id": "CVE-2026-103030",
+      "aliases": ["GHSA-cr65-55v9-xhvv"],
+      "kind": "vulnerability",
+      "title_en": "dio HTTP/2 adapter (Dart/Flutter): your login token is sent to other sites on redirects",
+      "title_es": "Adaptador HTTP/2 de dio (Dart/Flutter): tu token de sesión se envía a otros sitios en las redirecciones",
+      "summary_en": "When Dio uses Http2Adapter it follows redirects by default and copies every request header to the new address, even when it is another site. If any server your app calls answers with a redirect to an attacker's site, the attacker receives the user's Authorization, Cookie and Proxy-Authorization headers and can act as that user.",
+      "summary_es": "Cuando Dio usa Http2Adapter sigue las redirecciones por defecto y copia todas las cabeceras a la nueva dirección, aunque sea otro sitio. Si algún servidor al que llama tu app responde con una redirección al sitio de un atacante, este recibe las cabeceras Authorization, Cookie y Proxy-Authorization del usuario y puede actuar como él.",
+      "fix_en": "Upgrade dio_http2_adapter to 2.8.0 or later (flutter pub upgrade dio_http2_adapter) and ship a new app build. Until then set followRedirects: false on requests that carry credentials. If you suspect a token leaked, revoke it.",
+      "fix_es": "Actualiza dio_http2_adapter a 2.8.0 o superior (flutter pub upgrade dio_http2_adapter) y publica una nueva versión de la app. Mientras tanto usa followRedirects: false en las peticiones que llevan credenciales. Si sospechas que se filtró un token, revócalo.",
+      "severity": "high",
+      "cvss": { "score": 7.5, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", "by": "GitHub" },
+      "published": "2026-10-15",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "Pub", "package": "dio_http2_adapter", "ranges": [">= 1.0.0, <= 2.7.1"], "fixed": ["2.8.0"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-cr65-55v9-xhvv",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-103030",
+        "https://github.com/cfug/dio/releases/tag/http2_adapter_v2.8.0"
+      ]
+    },
+    {
       "id": "GHSA-2464-fhr4-w9xw",
       "aliases": ["CVE-2026-96889", "GHSA-673q-mjm6-r5xr"],
       "kind": "vulnerability",
@@ -50,6 +97,30 @@
         "https://github.com/advisories/GHSA-2464-fhr4-w9xw",
         "https://github.com/advisories/GHSA-673q-mjm6-r5xr",
         "https://nvd.nist.gov/vuln/detail/CVE-2026-96889"
+      ]
+    },
+    {
+      "id": "CVE-2026-54892",
+      "aliases": ["GHSA-j43x-5hjq-rgxf", "EEF-CVE-2026-54892"],
+      "kind": "vulnerability",
+      "title_en": "Plug (Elixir): one crafted form or query string can freeze a Phoenix server",
+      "title_es": "Plug (Elixir): un formulario o query string preparado puede congelar un servidor Phoenix",
+      "summary_en": "Plug decodes nested parameters such as a[a][a]…=1 in time that grows with the square of the nesting depth. A single small request to any endpoint (query string, form post or multipart upload) keeps a CPU core busy for minutes, and a few of them make the app stop answering. No login is needed.",
+      "summary_es": "Plug decodifica parámetros anidados como a[a][a]…=1 en un tiempo que crece con el cuadrado de la profundidad. Una sola petición pequeña a cualquier endpoint (query string, formulario o subida multipart) mantiene ocupado un núcleo de CPU por minutos, y unas pocas hacen que la app deje de responder. No hace falta iniciar sesión.",
+      "fix_en": "Upgrade plug to 1.15.5, 1.16.4, 1.17.2, 1.18.3 or 1.19.3 or later, matching your line (mix deps.update plug, then commit mix.lock). Until then lower the body limits in Plug.Parsers and have your proxy cap the query string's length.",
+      "fix_es": "Actualiza plug a 1.15.5, 1.16.4, 1.17.2, 1.18.3 o 1.19.3 o superior, según tu línea (mix deps.update plug y haz commit de mix.lock). Mientras tanto baja los límites de cuerpo en Plug.Parsers y haz que tu proxy limite el largo del query string.",
+      "severity": "high",
+      "cvss": { "score": 8.7, "version": "4.0", "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N", "by": "EEF" },
+      "published": "2026-09-23",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "Hex", "package": "plug", "ranges": [">= 1.15.0, < 1.15.5", ">= 1.16.0, < 1.16.4", ">= 1.17.0, < 1.17.2", ">= 1.18.0, < 1.18.3", ">= 1.19.0, < 1.19.3"], "fixed": ["1.15.5", "1.16.4", "1.17.2", "1.18.3", "1.19.3"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-j43x-5hjq-rgxf",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-54892",
+        "https://cna.erlef.org/cves/CVE-2026-54892.html"
       ]
     },
     {
@@ -146,6 +217,29 @@
         "https://github.com/BerriAI/litellm/security/advisories/GHSA-7488-6r32-c95q",
         "https://nvd.nist.gov/vuln/detail/CVE-2026-59822",
         "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-59822"
+      ]
+    },
+    {
+      "id": "CVE-2026-28980",
+      "aliases": ["GHSA-rj37-6j9x-74q6"],
+      "kind": "vulnerability",
+      "title_en": "SwiftNIO: one request with huge numbers of headers can take down a Vapor or Hummingbird server",
+      "title_es": "SwiftNIO: una petición con muchísimas cabeceras puede tumbar un servidor Vapor o Hummingbird",
+      "summary_en": "SwiftNIO's HTTP/1 parser put no limit on how many headers a request may carry or on their total size. Anyone can send a request with hundreds of thousands of small headers: Hummingbird 2 crashes, and Vapor 4 uses more and more memory until the server falls over. No login is needed.",
+      "summary_es": "El parser HTTP/1 de SwiftNIO no limitaba cuántas cabeceras puede traer una petición ni su tamaño total. Cualquiera puede mandar una petición con cientos de miles de cabeceras pequeñas: Hummingbird 2 se cae y Vapor 4 usa cada vez más memoria hasta que el servidor deja de responder. No hace falta iniciar sesión.",
+      "fix_en": "Upgrade swift-nio to 2.100.0 or later (swift package update swift-nio, then commit Package.resolved). Until then, put a reverse proxy in front that caps the number and size of headers (nginx: large_client_header_buffers).",
+      "fix_es": "Actualiza swift-nio a 2.100.0 o superior (swift package update swift-nio y haz commit de Package.resolved). Mientras tanto, pon delante un proxy inverso que limite la cantidad y el tamaño de las cabeceras (en nginx, large_client_header_buffers).",
+      "severity": "high",
+      "cvss": { "score": 8.7, "version": "4.0", "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N", "by": "GitHub" },
+      "published": "2026-06-12",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "SwiftURL", "package": "github.com/apple/swift-nio", "ranges": ["<= 2.99.0"], "fixed": ["2.100.0"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-rj37-6j9x-74q6",
+        "https://github.com/apple/swift-nio/security/advisories/GHSA-rj37-6j9x-74q6"
       ]
     },
     {
@@ -262,6 +356,31 @@
       "sources": [
         "https://github.com/advisories/GHSA-267c-6grr-h53f",
         "https://github.com/advisories/GHSA-26hh-7cqf-hhc6"
+      ]
+    },
+    {
+      "id": "CVE-2026-40372",
+      "aliases": ["GHSA-9mv3-2cwr-p262"],
+      "kind": "vulnerability",
+      "title_en": "ASP.NET Core Data Protection 10.0.0–10.0.6: attackers can forge login cookies",
+      "title_es": "ASP.NET Core Data Protection 10.0.0–10.0.6: un atacante puede falsificar cookies de sesión",
+      "summary_en": "A bug in the signature check of Microsoft.AspNetCore.DataProtection lets an attacker forge authentication cookies and other protected values, log in as any user (admins included) and decrypt some protected data. It affects apps that load the 10.0.0–10.0.6 NuGet package, mainly on Linux and macOS. Tokens the app issued to an attacker meanwhile (password reset links, API keys, refresh tokens) stay valid after the upgrade.",
+      "summary_es": "Un error en la verificación de firma de Microsoft.AspNetCore.DataProtection permite falsificar cookies de autenticación y otros valores protegidos, entrar como cualquier usuario (incluidos administradores) y descifrar algunos datos protegidos. Afecta a apps que cargan el paquete NuGet 10.0.0–10.0.6, sobre todo en Linux y macOS. Los tokens que la app le haya emitido al atacante mientras tanto (enlaces para cambiar contraseña, claves de API, refresh tokens) siguen siendo válidos después de actualizar.",
+      "fix_en": "Upgrade Microsoft.AspNetCore.DataProtection to 10.0.7 or later and redeploy. Then rotate the Data Protection key ring (IKeyManager.RevokeAllKeys; everyone signs in again) and revoke API keys, refresh tokens and password-reset links issued while you ran 10.0.0–10.0.6. Rotate any secret you stored inside Protect() output.",
+      "fix_es": "Actualiza Microsoft.AspNetCore.DataProtection a 10.0.7 o superior y despliega. Luego rota el anillo de claves de Data Protection (IKeyManager.RevokeAllKeys; todos vuelven a iniciar sesión) y revoca claves de API, refresh tokens y enlaces de cambio de contraseña emitidos mientras corrías 10.0.0–10.0.6. Rota cualquier secreto que guardaras cifrado con Protect().",
+      "severity": "critical",
+      "cvss": { "score": 9.1, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N", "by": "Microsoft" },
+      "published": "2026-04-23",
+      "exploited": false,
+      "affected": [
+        { "ecosystem": "NuGet", "package": "microsoft.aspnetcore.dataprotection", "ranges": [">= 10.0.0, <= 10.0.6"], "fixed": ["10.0.7"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-9mv3-2cwr-p262",
+        "https://nvd.nist.gov/vuln/detail/CVE-2026-40372",
+        "https://github.com/dotnet/announcements/issues/395",
+        "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-40372"
       ]
     },
     {
@@ -415,6 +534,32 @@
         "https://github.com/advisories/GHSA-29cq-5w36-x7w3",
         "https://nvd.nist.gov/vuln/detail/CVE-2025-54068",
         "https://www.cisa.gov/news-events/alerts/2026/03/20/cisa-adds-five-known-exploited-vulnerabilities-catalog"
+      ]
+    },
+    {
+      "id": "CVE-2025-24813",
+      "aliases": ["GHSA-83qj-6fr2-vhqg"],
+      "kind": "vulnerability",
+      "title_en": "Apache Tomcat: a partial PUT upload can lead to remote code execution",
+      "title_es": "Apache Tomcat: una subida con PUT parcial puede terminar en ejecución remota de código",
+      "summary_en": "If Tomcat's default servlet accepts writes, an attacker can upload a crafted session file with a partial PUT request and have the server run their code when it loads it, or read and alter uploaded files. Writes are off by default, but some apps turn them on. It ships inside every Spring Boot web app, and CISA lists it as exploited in real attacks.",
+      "summary_es": "Si el servlet por defecto de Tomcat acepta escrituras, un atacante puede subir un archivo de sesión preparado con una petición PUT parcial y lograr que el servidor ejecute su código al cargarlo, o leer y alterar archivos subidos. Las escrituras vienen desactivadas, pero algunas apps las activan. Viene dentro de toda app web con Spring Boot, y CISA la lista como explotada en ataques reales.",
+      "fix_en": "Upgrade Tomcat to 11.0.3, 10.1.35 or 9.0.99 or later (Spring Boot: raise the Boot version or set tomcat.version). 8.5 gets no fix: move to 9.0 or later. Until then keep the default servlet read-only (readonly=true) and turn off partial PUT (allowPartialPut=false).",
+      "fix_es": "Actualiza Tomcat a 11.0.3, 10.1.35 o 9.0.99 o superior (Spring Boot: sube la versión de Boot o fija tomcat.version). 8.5 no recibe arreglo: pasa a 9.0 o superior. Mientras tanto deja el servlet por defecto en solo lectura (readonly=true) y desactiva el PUT parcial (allowPartialPut=false).",
+      "severity": "critical",
+      "cvss": { "score": 9.8, "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "by": "NVD" },
+      "published": "2025-03-10",
+      "exploited": true,
+      "kev": "2025-04-01",
+      "affected": [
+        { "ecosystem": "Maven", "package": "org.apache.tomcat.embed:tomcat-embed-core", "ranges": [">= 11.0.0-M1, < 11.0.3", ">= 10.1.0-M1, < 10.1.35", ">= 9.0.0.M1, < 9.0.99", ">= 8.5.0, <= 8.5.100"], "fixed": ["11.0.3", "10.1.35", "9.0.99"] },
+        { "ecosystem": "Maven", "package": "org.apache.tomcat:tomcat-catalina", "ranges": [">= 11.0.0-M1, < 11.0.3", ">= 10.1.0-M1, < 10.1.35", ">= 9.0.0.M1, < 9.0.99", ">= 8.5.0, <= 8.5.100"], "fixed": ["11.0.3", "10.1.35", "9.0.99"] }
+      ],
+      "detect": { "lockfile": true },
+      "sources": [
+        "https://github.com/advisories/GHSA-83qj-6fr2-vhqg",
+        "https://nvd.nist.gov/vuln/detail/CVE-2025-24813",
+        "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2025-24813"
       ]
     }
   ]
